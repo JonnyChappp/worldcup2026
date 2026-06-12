@@ -77,21 +77,25 @@ section>.note{color:var(--sub);font-size:13px;margin-bottom:12px}
 .gamerow .picks{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
 
 /* group race */
-.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
 .gcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
 .gcard h3{font-size:18px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
 .gcard h3 .st{font-size:12px;color:var(--sub);font-weight:500;letter-spacing:0;text-transform:none}
 .gcard h3 .st.done{color:var(--hit)}
-.gcard table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:9px}
-.gcard td{padding:3px 4px;border-bottom:1px solid var(--line)}
-.gcard td.pos{color:var(--sub);width:18px}
-.gcard td.tm{display:flex;align-items:center;gap:6px;font-weight:600}
-.gcard td.tm img{width:17px;height:17px;object-fit:contain}
-.gcard td.num{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}
-.gcard .prow{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px}
-.gcard .prow .pn{color:var(--sub);width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gcard .prow .seq{display:flex;gap:4px}
-.mini{padding:1px 6px;border-radius:5px;background:var(--box);border:1px solid var(--line);font-weight:600;font-size:12px}
+.gcard table{width:100%;border-collapse:collapse;font-size:13px}
+.gcard th{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--sub);padding:0 3px 4px;text-align:center;
+  max-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gcard th.lbl{text-align:left}
+.gcard td{padding:3px 3px;border-bottom:1px solid var(--line)}
+.gcard td.pos{color:var(--sub);width:16px}
+.gcard td.tm{font-weight:600;max-width:118px}
+.gcard td.tm .tmw{display:flex;align-items:center;gap:6px}
+.gcard td.tm .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gcard td.tm img{width:17px;height:17px;object-fit:contain;flex-shrink:0}
+.gcard td.num{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gcard td.pk{text-align:center}
+.mini{display:inline-block;padding:1px 5px;border-radius:5px;background:var(--box);border:1px solid var(--line);font-weight:600;font-size:12px;white-space:nowrap}
 .mini.on{border-color:var(--hit);color:var(--hit)}
 .mini.hit{background:rgba(46,204,113,.18);border-color:var(--hit);color:var(--hit)}
 .mini.miss{background:rgba(231,76,60,.12);border-color:var(--miss);color:#d99;text-decoration:line-through}
@@ -157,7 +161,7 @@ footer a{color:var(--sub)}
 
 <section>
   <h2>Group race</h2>
-  <div class="note">Live tables vs everyone's predicted order. A lit chip is a team currently sitting exactly where predicted — points lock when the group finishes.</div>
+  <div class="note">Live tables with each player's predicted order alongside — every column reads 1st to 4th, row by row against reality. A lit chip is a team currently sitting exactly where predicted; points lock when the group finishes.</div>
   <div class="groups" id="groups"></div>
 </section>
 
@@ -328,32 +332,39 @@ function renderGroups(){
     const rows = state.standings.table[g];
     const done = state.standings.complete[g];
     const started = rows.some((r) => r.p > 0);
-    const table = rows.map((r, i) =>
-      '<tr><td class="pos">' + (i + 1) + '</td>' +
-      '<td class="tm">' + crest(r.tla) + esc(tname(r.tla)) + '</td>' +
-      '<td class="num">' + (started ? r.p + ' pld' : '') + '</td>' +
-      '<td class="num"><b>' + (started ? r.pts + ' pts' : '–') + '</b></td></tr>'
-    ).join('');
-    const prows = state.rows.map((row) => {
-      const det = row.score.detail.groups[g] || [];
-      const seq = det.map((d) => {
+    // One column per player; each row is a finishing position, so every
+    // player's predicted order reads top-to-bottom next to the live table.
+    const head = '<tr><th class="lbl" colspan="2">Live table</th><th></th>' +
+      state.rows.map((row) =>
+        '<th style="color:' + safeColor(row.player.color) + '" title="' +
+        esc(row.player.name) + '">' + esc(row.player.name) + '</th>').join('') +
+      '</tr>';
+    const body = rows.map((r, i) => {
+      const picks = state.rows.map((row) => {
+        const d = (row.score.detail.groups[g] || [])[i];
+        if (!d) return '<td class="pk"></td>';
         const cls = d.status === 'hit' ? 'hit' : d.status === 'miss' ? 'miss' :
           d.status === 'on' ? 'on' : '';
         const sr = d.status === 'hit' ? ' (locked correct)' :
           d.status === 'miss' ? ' (locked wrong)' :
           d.status === 'on' ? ' (currently exact)' : '';
-        return '<span class="mini ' + cls + '" aria-label="' + esc(d.tla) + sr + '">' +
+        return '<td class="pk"><span class="mini ' + cls + '" aria-label="' +
+          esc(row.player.name) + ' picked ' + esc(d.tla) + ' ' + (i + 1) +
+          (i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th') + sr + '">' +
           esc(d.tla) + (d.status === 'on' ? '<span aria-hidden="true">•</span>' :
-          d.status === 'hit' ? '<span aria-hidden="true">✓</span>' : '') + '</span>';
+          d.status === 'hit' ? '<span aria-hidden="true">✓</span>' : '') +
+          '</span></td>';
       }).join('');
-      return '<div class="prow"><span class="pn" style="color:' +
-        safeColor(row.player.color) + '">' + esc(row.player.name) + '</span>' +
-        '<span class="seq">' + seq + '</span></div>';
+      return '<tr><td class="pos">' + (i + 1) + '</td>' +
+        '<td class="tm"><span class="tmw">' + crest(r.tla) +
+        '<span class="nm">' + esc(tname(r.tla)) + '</span></span></td>' +
+        '<td class="num"><b>' + (started ? r.pts + ' pts' : '–') + '</b></td>' +
+        picks + '</tr>';
     }).join('');
     return '<div class="gcard"><h3>Group ' + g +
       ' <span class="st' + (done ? ' done' : '') + '">' +
       (done ? 'final ✓' : started ? 'in progress' : 'not started') + '</span></h3>' +
-      '<table>' + table + '</table>' + prows + '</div>';
+      '<table>' + head + body + '</table></div>';
   }).join('');
 }
 
