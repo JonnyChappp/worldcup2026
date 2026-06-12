@@ -61,20 +61,21 @@ section>.note{color:var(--sub);font-size:13px;margin-bottom:12px}
 .chip.miss .tla{text-decoration:line-through}
 .chip .owner{font-size:11px;color:var(--sub);font-weight:500}
 
-/* who called it */
-.round{margin-bottom:18px}
-.round h3{color:var(--text);font-size:17px;text-transform:uppercase;letter-spacing:.6px;
-  margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:4px}
-.gamerow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--card);
-  border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:8px}
-.gamerow .mn{color:var(--sub);font-size:12px;width:84px;flex-shrink:0;line-height:1.35}
-.gamerow .fixture{display:flex;align-items:center;gap:7px;min-width:230px;font-weight:600;font-size:14px}
-.gamerow .fixture img{width:19px;height:19px;object-fit:contain}
-.gamerow .fixture .ph{color:var(--sub);font-weight:500;font-size:13px}
-.gamerow .score{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;min-width:46px;text-align:center}
-.gamerow .score.live{color:var(--live)}
-.gamerow .winflag{color:var(--hit)}
-.gamerow .picks{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+/* bracket grids (who-called-it + predicted brackets): every later-round box
+   spans its two feeders' grid rows and centers between them */
+.bwrap{overflow-x:auto;padding-bottom:8px}
+.bgrid{display:grid;column-gap:14px}
+.bgrid.games{min-width:1150px}
+.bgrid.viewer{min-width:1050px}
+.blab{font-family:'Barlow Condensed',sans-serif;color:var(--sub);text-transform:uppercase;
+  font-size:13px;letter-spacing:1px;text-align:center;padding-bottom:8px;align-self:end}
+.bgrid .bm{align-self:center;margin:3px 0;min-width:0}
+.bm .t .sc{margin-left:auto;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px}
+.bm .t .sc.live{color:var(--live)}
+.bm .lbl .lv{color:var(--live);font-weight:700}
+.wpicks{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
+.wpicks .chip{font-size:11px;padding:1px 6px 1px 4px;gap:4px}
+.wpicks .chip img{width:14px;height:14px}
 
 /* group race */
 .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
@@ -106,11 +107,6 @@ section>.note{color:var(--sub);font-size:13px;margin-bottom:12px}
   letter-spacing:.5px;border:1.5px solid var(--line);background:none;color:var(--text);
   border-radius:8px;padding:6px 16px;cursor:pointer}
 .ptab.on{background:var(--gold);border-color:var(--gold);color:#0A0E1A}
-.bwrap{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
-.bcol{min-width:185px;flex:1}
-.bcol h4{font-family:'Barlow Condensed',sans-serif;color:var(--sub);text-transform:uppercase;
-  font-size:13px;letter-spacing:1px;text-align:center;margin-bottom:8px}
-.bcol .stack{display:flex;flex-direction:column;justify-content:space-around;gap:8px;height:100%}
 .bm{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:5px 8px}
 .bm .lbl{color:var(--sub);font-size:10.5px;margin-bottom:2px}
 .bm .t{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:2px 0}
@@ -155,7 +151,7 @@ footer a{color:var(--sub)}
 
 <section>
   <h2>Who called it</h2>
-  <div class="note">Every knockout game with each player's pick for that slot. Green = nailed it, red = busted, neutral = still alive.</div>
+  <div class="note">The knockout bracket with everyone's pick in each game. Real teams and scores fill in as the tournament reaches them. Green = nailed it, red = busted, neutral = still alive.</div>
   <div id="games"></div>
 </section>
 
@@ -233,6 +229,26 @@ function slotPlaceholder(id){
   return 'TBD';
 }
 
+// Bracket ordering derived from the feeder chain, so a match always sits
+// adjacent to the other feeder of the round it flows into — and grid spans
+// keep each box vertically centered between its two feeders.
+const BRACKET_ORDER = (function(){
+  const o = { FINAL: [537390] };
+  o.SEMI_FINALS = W.FEEDERS[537390].slice();
+  o.QUARTER_FINALS = o.SEMI_FINALS.flatMap((id) => W.FEEDERS[id]);
+  o.LAST_16 = o.QUARTER_FINALS.flatMap((id) => W.FEEDERS[id]);
+  o.LAST_32 = o.LAST_16.flatMap((id) => W.FEEDERS[id]);
+  return o;
+})();
+const BR_SPAN = { LAST_32: 2, LAST_16: 4, QUARTER_FINALS: 8, SEMI_FINALS: 16, FINAL: 32 };
+
+// One grid cell per match box: column = round, rows = the feeders' extent.
+function bracketCell(round, col, i, inner){
+  const span = BR_SPAN[round];
+  return '<div class="bm" style="grid-column:' + col + ';grid-row:' +
+    (2 + i * span) + '/span ' + span + '">' + inner + '</div>';
+}
+
 // ------------------------------------------------------------ leaderboard
 function renderLeaderboard(){
   const max = { groups: 48 * W.SCORING.groupExact, thirds: 8 * W.SCORING.thirdQualifier,
@@ -272,37 +288,28 @@ function renderLeaderboard(){
 
 // ---------------------------------------------------------- who called it
 function renderGames(){
-  const byRound = {};
-  for (const idStr of Object.keys(W.ROUND_OF)) {
-    const id = Number(idStr);
-    (byRound[W.ROUND_OF[id]] = byRound[W.ROUND_OF[id]] || []).push(id);
-  }
-  $('games').innerHTML = W.ROUNDS.map((round) => {
-    const ids = (byRound[round] || []).sort((a, b) => {
-      const sa = state.actual.slots[a], sb = state.actual.slots[b];
-      return new Date((sa && sa.utcDate) || 0) - new Date((sb && sb.utcDate) || 0) || a - b;
-    });
-    const rows = ids.map((id) => {
+  const cells = [];
+  W.ROUNDS.forEach((round, c) => {
+    cells.push('<div class="blab" style="grid-column:' + (c + 1) +
+      ';grid-row:1">' + ROUND_LABEL[round] + '</div>');
+    BRACKET_ORDER[round].forEach((id, i) => {
       const real = state.actual.slots[id] || {};
-      const known = real.home && real.away;
-      let fixture, score = '';
-      if (known) {
-        fixture = crest(real.home) + '<span>' + esc(tname(real.home)) + '</span>' +
-          (real.winner === real.home ? '<span class="winflag">◀</span>' : '') +
-          '<span class="ph">v</span>' + crest(real.away) +
-          '<span>' + esc(tname(real.away)) + '</span>' +
-          (real.winner === real.away ? '<span class="winflag">◀</span>' : '');
-      } else {
-        fixture = '<span class="ph">' + esc(slotPlaceholder(id)) + '</span>';
-      }
-      if (real.finished || real.live) {
-        const m = state.matchById[id];
-        const ft = m && m.score && m.score.fullTime;
-        if (ft && ft.home != null) {
-          score = '<span class="score' + (real.live ? ' live' : '') + '">' +
-            ft.home + '–' + ft.away + (real.live ? ' ●' : '') + '</span>';
-        }
-      }
+      const m = state.matchById[id];
+      const ft = m && m.score && m.score.fullTime;
+      const showScore = (real.finished || real.live) && ft && ft.home != null;
+      const teamRow = (tla) => {
+        const won = real.winner === tla;
+        return '<div class="t' + (won ? ' ok' : '') + '">' + crest(tla) +
+          '<span class="nm">' + esc(tname(tla)) + '</span>' +
+          (showScore
+            ? '<span class="sc' + (real.live ? ' live' : '') + '">' +
+              (tla === real.home ? ft.home : ft.away) + '</span>'
+            : (won ? '<span class="mark">✓</span>' : '')) +
+          '</div>';
+      };
+      const fixture = (real.home && real.away)
+        ? teamRow(real.home) + teamRow(real.away)
+        : '<div class="t"><span class="ph">' + esc(slotPlaceholder(id)) + '</span></div>';
       const picks = state.rows.map((row) => {
         // The engine's verdict (team-identity scoring) — never re-derive
         // per-slot, or the grid disagrees with the leaderboard when a team
@@ -317,13 +324,15 @@ function renderGames(){
           '<span class="tla">' + esc(d.pick) + '</span>' + mark +
           '<span class="owner">' + esc(row.player.name) + '</span></span>';
       }).join('');
-      return '<div class="gamerow">' +
-        '<div class="mn">M' + W.MATCH_NUM[id] + '<br>' + fmtDate(real.utcDate || '') + '</div>' +
-        '<div class="fixture">' + fixture + '</div>' + score +
-        '<div class="picks">' + picks + '</div></div>';
-    }).join('');
-    return '<div class="round"><h3>' + ROUND_LABEL[round] + '</h3>' + rows + '</div>';
-  }).join('');
+      cells.push(bracketCell(round, c + 1, i,
+        '<div class="lbl">M' + W.MATCH_NUM[id] + ' · ' + fmtDate(real.utcDate || '') +
+        (real.live ? ' · <span class="lv">LIVE</span>' : '') + '</div>' +
+        fixture + '<div class="wpicks">' + picks + '</div>'));
+    });
+  });
+  $('games').innerHTML = '<div class="bwrap" id="games-scroll">' +
+    '<div class="bgrid games" style="grid-template-columns:repeat(5,minmax(215px,1fr))">' +
+    cells.join('') + '</div></div>';
 }
 
 // ------------------------------------------------------------- group race
@@ -423,17 +432,11 @@ function teamFate(tla, round){
 function renderBracket(){
   const row = state.rows.find((r) => r.player.name === selected) || state.rows[0];
   if (!row) { $('bracket').innerHTML = ''; return; }
-  const byRound = {};
-  for (const idStr of Object.keys(W.ROUND_OF)) {
-    const id = Number(idStr);
-    (byRound[W.ROUND_OF[id]] = byRound[W.ROUND_OF[id]] || []).push(id);
-  }
-  $('bracket').innerHTML = W.ROUNDS.map((round) => {
-    const ids = (byRound[round] || []).sort((a, b) => {
-      const sa = state.actual.slots[a], sb = state.actual.slots[b];
-      return new Date((sa && sa.utcDate) || 0) - new Date((sb && sb.utcDate) || 0) || a - b;
-    });
-    const boxes = ids.map((id) => {
+  const cells = [];
+  W.ROUNDS.forEach((round, c) => {
+    cells.push('<div class="blab" style="grid-column:' + (c + 1) +
+      ';grid-row:1">' + ROUND_LABEL[round] + '</div>');
+    BRACKET_ORDER[round].forEach((id, i) => {
       const slot = row.pred.slots[id] || {};
       const real = state.actual.slots[id] || {};
       const team = (tla) => {
@@ -446,24 +449,26 @@ function renderBracket(){
           crest(tla) + '<span class="nm">' + esc(tname(tla)) + '</span>' +
           '<span class="mark">' + mark + '</span></div>';
       };
-      return '<div class="bm"><div class="lbl">M' + W.MATCH_NUM[id] + ' · ' +
-        fmtDate(real.utcDate || '') + '</div>' + team(slot.home) + team(slot.away) + '</div>';
-    }).join('');
-    return '<div class="bcol"><h4>' + ROUND_LABEL[round] + '</h4>' +
-      '<div class="stack">' + boxes + '</div></div>';
-  }).join('') +
-  // champion column
-  (function(){
-    const champ = row.championPick;
-    if (!champ) return '';
+      cells.push(bracketCell(round, c + 1, i,
+        '<div class="lbl">M' + W.MATCH_NUM[id] + ' · ' + fmtDate(real.utcDate || '') +
+        '</div>' + team(slot.home) + team(slot.away)));
+    });
+  });
+  // champion column, centered on the whole bracket
+  const champ = row.championPick;
+  cells.push('<div class="blab" style="grid-column:6;grid-row:1">Champion</div>');
+  if (champ) {
     const fate = teamFate(champ, 'CHAMP');
-    return '<div class="bcol"><h4>Champion</h4><div class="stack"><div class="bm">' +
+    cells.push('<div class="bm" style="grid-column:6;grid-row:2/span 32">' +
       '<div class="lbl">' + esc(row.player.name) + "'s winner</div>" +
       '<div class="t pickw' + (fate === 'dead' ? ' dead' : fate === 'ok' ? ' ok' : '') + '">' +
       crest(champ) + '<span class="nm">' + esc(tname(champ)) + '</span>' +
       '<span class="mark">' + (fate === 'ok' ? '\u{1F3C6}' : fate === 'dead' ? '✗' : '') +
-      '</span></div></div></div></div>';
-  })();
+      '</span></div></div>');
+  }
+  $('bracket').innerHTML =
+    '<div class="bgrid viewer" style="grid-template-columns:repeat(6,minmax(170px,1fr))">' +
+    cells.join('') + '</div>';
 }
 
 // ----------------------------------------------------------------- legend
@@ -526,10 +531,15 @@ async function load(){
     if (!selected || !state.rows.some((r) => r.player.name === selected)) {
       selected = state.rows[0] && state.rows[0].player.name;
     }
-    const scrollX = $('bracket').scrollLeft; // keep the user's place in the scroller
+    // Keep the user's place in both horizontal scrollers across re-renders.
+    const scrollX = $('bracket').scrollLeft;
+    const gamesEl = $('games-scroll');
+    const gamesX = gamesEl ? gamesEl.scrollLeft : 0;
     renderLeaderboard(); renderGames(); renderGroups();
     renderTabs(); renderBracket(); renderLegend();
     $('bracket').scrollLeft = scrollX;
+    const gamesEl2 = $('games-scroll');
+    if (gamesEl2) gamesEl2.scrollLeft = gamesX;
   } catch (e) {
     if (seq !== loadSeq) return;
     const errEl = $('err');
