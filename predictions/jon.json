@@ -1,0 +1,64 @@
+{
+  "name": "Jon",
+  "color": "#ff8a3d",
+  "source": "FIFA Bracket Challenge (play.fifa.com), imported 2026-06-12",
+  "groups": {
+    "A": ["MEX", "KOR", "CZE", "RSA"],
+    "B": ["CAN", "BIH", "SUI", "QAT"],
+    "C": ["BRA", "MAR", "SCO", "HAI"],
+    "D": ["USA", "TUR", "PAR", "AUS"],
+    "E": ["GER", "ECU", "CIV", "CUW"],
+    "F": ["NED", "JPN", "SWE", "TUN"],
+    "G": ["BEL", "IRN", "EGY", "NZL"],
+    "H": ["ESP", "URY", "KSA", "CPV"],
+    "I": ["FRA", "NOR", "SEN", "IRQ"],
+    "J": ["ARG", "AUT", "ALG", "JOR"],
+    "K": ["POR", "COL", "COD", "UZB"],
+    "L": ["ENG", "CRO", "GHA", "PAN"]
+  },
+  "thirdPlaceQualifiers": ["SEN", "SUI", "CIV", "SWE", "CZE", "PAR", "SCO", "GHA"],
+  "knockout": {
+    "roundOf32": [
+      { "venue": "Los Angeles Stadium", "date": "2026-06-28", "home": "KOR", "away": "BIH", "winner": "KOR" },
+      { "venue": "Boston Stadium", "date": "2026-06-29", "home": "GER", "away": "PAR", "winner": "GER" },
+      { "venue": "Monterrey Stadium", "date": "2026-06-29", "home": "NED", "away": "MAR", "winner": "NED" },
+      { "venue": "Houston Stadium", "date": "2026-06-29", "home": "BRA", "away": "JPN", "winner": "BRA" },
+      { "venue": "New York/New Jersey Stadium", "date": "2026-06-30", "home": "FRA", "away": "SWE", "winner": "FRA" },
+      { "venue": "Dallas Stadium", "date": "2026-06-30", "home": "ECU", "away": "NOR", "winner": "NOR" },
+      { "venue": "Mexico City Stadium", "date": "2026-06-30", "home": "MEX", "away": "SCO", "winner": "SCO" },
+      { "venue": "Toronto Stadium", "date": "2026-07-01", "home": "COL", "away": "CRO", "winner": "CRO" },
+      { "venue": "San Francisco Bay Area Stadium", "date": "2026-07-01", "home": "USA", "away": "SUI", "winner": "USA" },
+      { "venue": "Seattle Stadium", "date": "2026-07-01", "home": "BEL", "away": "CZE", "winner": "BEL" },
+      { "venue": "Atlanta Stadium", "date": "2026-07-01", "home": "ENG", "away": "SEN", "winner": "ENG" },
+      { "venue": "Los Angeles Stadium", "date": "2026-07-02", "home": "ESP", "away": "AUT", "winner": "ESP" },
+      { "venue": "BC Place Vancouver", "date": "2026-07-02", "home": "CAN", "away": "CIV", "winner": "CAN" },
+      { "venue": "Miami Stadium", "date": "2026-07-03", "home": "ARG", "away": "URY", "winner": "ARG" },
+      { "venue": "Dallas Stadium", "date": "2026-07-03", "home": "TUR", "away": "IRN", "winner": "TUR" },
+      { "venue": "Kansas City Stadium", "date": "2026-07-03", "home": "POR", "away": "GHA", "winner": "POR" }
+    ],
+    "roundOf16": [
+      { "venue": "Philadelphia Stadium", "date": "2026-07-04", "home": "GER", "away": "FRA", "winner": "FRA" },
+      { "venue": "Houston Stadium", "date": "2026-07-04", "home": "KOR", "away": "NED", "winner": "NED" },
+      { "venue": "New York/New Jersey Stadium", "date": "2026-07-05", "home": "BRA", "away": "NOR", "winner": "BRA" },
+      { "venue": "Mexico City Stadium", "date": "2026-07-05", "home": "SCO", "away": "ENG", "winner": "ENG" },
+      { "venue": "Dallas Stadium", "date": "2026-07-06", "home": "CRO", "away": "ESP", "winner": "ESP" },
+      { "venue": "Seattle Stadium", "date": "2026-07-06", "home": "USA", "away": "BEL", "winner": "USA" },
+      { "venue": "Atlanta Stadium", "date": "2026-07-07", "home": "ARG", "away": "TUR", "winner": "ARG" },
+      { "venue": "BC Place Vancouver", "date": "2026-07-07", "home": "CAN", "away": "POR", "winner": "POR" }
+    ],
+    "quarterFinals": [
+      { "venue": "Boston Stadium", "date": "2026-07-09", "home": "FRA", "away": "NED", "winner": "FRA" },
+      { "venue": "Los Angeles Stadium", "date": "2026-07-10", "home": "ESP", "away": "USA", "winner": "ESP" },
+      { "venue": "Miami Stadium", "date": "2026-07-11", "home": "BRA", "away": "ENG", "winner": "ENG" },
+      { "venue": "Kansas City Stadium", "date": "2026-07-11", "home": "ARG", "away": "POR", "winner": "POR" }
+    ],
+    "semiFinals": [
+      { "venue": "Dallas Stadium", "date": "2026-07-14", "home": "FRA", "away": "ESP", "winner": "ESP" },
+      { "venue": "Atlanta Stadium", "date": "2026-07-15", "home": "ENG", "away": "POR", "winner": "POR" }
+    ],
+    "final": [
+      { "venue": "New York/New Jersey Stadium", "date": "2026-07-19", "home": "ESP", "away": "POR", "winner": "ESP" }
+    ]
+  },
+  "champion": "ESP"
+}

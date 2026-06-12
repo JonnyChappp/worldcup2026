@@ -1,0 +1,64 @@
+{
+  "name": "FRIEND NAME",
+  "color": "#4da3ff",
+  "source": "FIFA Bracket Challenge (play.fifa.com), imported YYYY-MM-DD",
+  "groups": {
+    "A": ["", "", "", ""],
+    "B": ["", "", "", ""],
+    "C": ["", "", "", ""],
+    "D": ["", "", "", ""],
+    "E": ["", "", "", ""],
+    "F": ["", "", "", ""],
+    "G": ["", "", "", ""],
+    "H": ["", "", "", ""],
+    "I": ["", "", "", ""],
+    "J": ["", "", "", ""],
+    "K": ["", "", "", ""],
+    "L": ["", "", "", ""]
+  },
+  "thirdPlaceQualifiers": ["", "", "", "", "", "", "", ""],
+  "knockout": {
+    "roundOf32": [
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" }
+    ],
+    "roundOf16": [
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" }
+    ],
+    "quarterFinals": [
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" }
+    ],
+    "semiFinals": [
+      { "home": "", "away": "", "winner": "" },
+      { "home": "", "away": "", "winner": "" }
+    ],
+    "final": [
+      { "home": "", "away": "", "winner": "" }
+    ]
+  },
+  "champion": ""
+}

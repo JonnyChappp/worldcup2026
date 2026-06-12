@@ -5,11 +5,12 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 permissions:
   contents: write
+
+concurrency:
+  group: fetch-scores
+  cancel-in-progress: false
 
 jobs:
   fetch-scores:
@@ -19,15 +20,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Fetch scores from API via Cloudflare Worker
+      - name: Fetch scores from football-data.org
+        env:
+          FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
         run: |
-          curl -s "https://fancy-block-fde3.aking116.workers.dev/competitions/WC/matches?season=2026" \
-            -o data.json \
+          if [ -z "$FOOTBALL_DATA_TOKEN" ]; then
+            echo "FOOTBALL_DATA_TOKEN secret is not set." >&2
+            echo "Register a free key at https://www.football-data.org/client/register" >&2
+            echo "then add it under Settings > Secrets and variables > Actions." >&2
+            exit 1
+          fi
+          curl -s "https://api.football-data.org/v4/competitions/WC/matches?season=2026" \
+            -H "X-Auth-Token: $FOOTBALL_DATA_TOKEN" \
+            -o data.json.new \
             --fail \
             --max-time 25 \
             --retry 1 \
             --retry-delay 3
-          echo "Fetched $(cat data.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d['matches']))" ) matches"
+          # Refuse to clobber data.json with a truncated/invalid response.
+          python3 -c "import json,sys; d=json.load(open('data.json.new')); assert len(d['matches']) >= 100, 'only %d matches' % len(d['matches']); print('Fetched', len(d['matches']), 'matches')"
+          mv data.json.new data.json
 
       - name: Commit and push if changed
         run: |
@@ -35,4 +47,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
           git diff --staged --quiet || git commit -m "Update scores $(date -u '+%Y-%m-%d %H:%M UTC')"
+          # Main may have moved (prediction edits) since checkout.
+          git pull --rebase origin "${GITHUB_REF_NAME:-main}"
           git push

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bracket Pool — FIFA World Cup 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A; --card:#141829; --box:#1C2235; --line:#262d45;
+  --text:#E8EAF2; --sub:#7A82A8; --gold:#C9A84C;
+  --hit:#2ECC71; --miss:#E74C3C; --live:#4DA3FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;padding:14px 16px 60px}
+h1,h2,h3,.cond{font-family:'Barlow Condensed',sans-serif}
+.hdr{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px;margin-bottom:18px}
+.hdr h1{color:var(--gold);text-transform:uppercase;font-weight:800;font-size:clamp(20px,4vw,30px);letter-spacing:.5px}
+.hdr .sub{color:var(--sub);font-size:14px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.nav a{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text);text-decoration:none;border:1.5px solid var(--line);border-radius:8px;
+  padding:6px 14px;font-size:14px;font-weight:600}
+.nav a.on{background:var(--gold);border-color:var(--gold);color:#0A0E1A}
+section{margin-bottom:34px}
+section>h2{color:var(--gold);text-transform:uppercase;font-size:20px;letter-spacing:.8px;margin-bottom:4px}
+section>.note{color:var(--sub);font-size:13px;margin-bottom:12px}
+.err{background:#3a1320;border:1px solid var(--miss);border-radius:10px;padding:10px 14px;
+  color:#ffb4b4;font-size:14px;margin-bottom:18px;display:none}
+
+/* leaderboard */
+.lb{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.lbc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;position:relative}
+.lbc.first{border-color:var(--gold)}
+.lbc .rank{position:absolute;top:12px;right:14px;font-size:22px}
+.lbc .who{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.lbc .dot{width:11px;height:11px;border-radius:50%}
+.lbc .name{font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.lbc .pts{display:flex;align-items:baseline;gap:14px;margin-bottom:10px}
+.lbc .big{font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:800;color:var(--gold);line-height:1}
+.lbc .small{color:var(--sub);font-size:13px;line-height:1.5}
+.lbc .small b{color:var(--text)}
+.bars{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.bar{display:grid;grid-template-columns:62px 1fr 64px;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+.bar .tr{height:7px;border-radius:4px;background:var(--box);overflow:hidden;display:flex}
+.bar .f{background:var(--hit);height:100%}
+.bar .fp{background:rgba(46,204,113,.35);height:100%}
+.bar .v{text-align:right;font-variant-numeric:tabular-nums}
+.champ{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--sub);
+  border-top:1px solid var(--line);padding-top:9px}
+.champ img{width:20px;height:20px;object-fit:contain}
+.champ .t{color:var(--text);font-weight:600}
+.champ.dead .t{color:var(--miss);text-decoration:line-through}
+
+/* pick chips */
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--box);border:1px solid var(--line);
+  border-radius:7px;padding:2px 8px 2px 5px;font-size:13px;font-weight:600;white-space:nowrap}
+.chip img{width:17px;height:17px;object-fit:contain}
+.chip.hit{border-color:var(--hit);background:rgba(46,204,113,.13)}
+.chip.miss{border-color:var(--miss);background:rgba(231,76,60,.10);color:#d99}
+.chip.miss .tla{text-decoration:line-through}
+.chip .owner{font-size:11px;color:var(--sub);font-weight:500}
+
+/* who called it */
+.round{margin-bottom:18px}
+.round h3{color:var(--text);font-size:17px;text-transform:uppercase;letter-spacing:.6px;
+  margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.gamerow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:8px}
+.gamerow .mn{color:var(--sub);font-size:12px;width:84px;flex-shrink:0;line-height:1.35}
+.gamerow .fixture{display:flex;align-items:center;gap:7px;min-width:230px;font-weight:600;font-size:14px}
+.gamerow .fixture img{width:19px;height:19px;object-fit:contain}
+.gamerow .fixture .ph{color:var(--sub);font-weight:500;font-size:13px}
+.gamerow .score{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;min-width:46px;text-align:center}
+.gamerow .score.live{color:var(--live)}
+.gamerow .winflag{color:var(--hit)}
+.gamerow .picks{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+
+/* group race */
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.gcard h3{font-size:18px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.gcard h3 .st{font-size:12px;color:var(--sub);font-weight:500;letter-spacing:0;text-transform:none}
+.gcard h3 .st.done{color:var(--hit)}
+.gcard table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:9px}
+.gcard td{padding:3px 4px;border-bottom:1px solid var(--line)}
+.gcard td.pos{color:var(--sub);width:18px}
+.gcard td.tm{display:flex;align-items:center;gap:6px;font-weight:600}
+.gcard td.tm img{width:17px;height:17px;object-fit:contain}
+.gcard td.num{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}
+.gcard .prow{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px}
+.gcard .prow .pn{color:var(--sub);width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gcard .prow .seq{display:flex;gap:4px}
+.mini{padding:1px 6px;border-radius:5px;background:var(--box);border:1px solid var(--line);font-weight:600;font-size:12px}
+.mini.on{border-color:var(--hit);color:var(--hit)}
+.mini.hit{background:rgba(46,204,113,.18);border-color:var(--hit);color:var(--hit)}
+.mini.miss{background:rgba(231,76,60,.12);border-color:var(--miss);color:#d99;text-decoration:line-through}
+
+/* bracket viewer */
+.ptabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ptab{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-weight:600;font-size:15px;
+  letter-spacing:.5px;border:1.5px solid var(--line);background:none;color:var(--text);
+  border-radius:8px;padding:6px 16px;cursor:pointer}
+.ptab.on{background:var(--gold);border-color:var(--gold);color:#0A0E1A}
+.bwrap{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.bcol{min-width:185px;flex:1}
+.bcol h4{font-family:'Barlow Condensed',sans-serif;color:var(--sub);text-transform:uppercase;
+  font-size:13px;letter-spacing:1px;text-align:center;margin-bottom:8px}
+.bcol .stack{display:flex;flex-direction:column;justify-content:space-around;gap:8px;height:100%}
+.bm{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:5px 8px}
+.bm .lbl{color:var(--sub);font-size:10.5px;margin-bottom:2px}
+.bm .t{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:2px 0}
+.bm .t img{width:16px;height:16px;object-fit:contain}
+.bm .t.pickw{color:var(--gold)}
+.bm .t .mark{margin-left:auto;font-size:11px}
+.bm .t.dead{color:#8a5560}
+.bm .t.dead .nm{text-decoration:line-through}
+.bm .t.ok .mark{color:var(--hit)}
+.bm .t.dead .mark{color:var(--miss)}
+
+/* legend */
+.legend{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;font-size:14px;color:var(--sub);line-height:1.7}
+.legend b{color:var(--text)}
+footer{margin-top:30px;color:var(--sub);font-size:12px}
+footer a{color:var(--sub)}
+@media(max-width:640px){
+  .gamerow .picks{margin-left:0;width:100%}
+  .gamerow .mn{width:70px}
+}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Bracket Pool</h1>
+  <div class="sub">FIFA World Cup 2026 — who actually knows ball?</div>
+  <nav class="nav">
+    <a href="index.html">&#128197; Schedule</a>
+    <a href="groups.html">&#128202; Groups</a>
+    <a href="bracket.html">&#127942; Knockout</a>
+    <a href="predictions.html" class="on">&#127919; Brackets</a>
+  </nav>
+</div>
+
+<div class="err" id="err"></div>
+
+<section>
+  <h2>Leaderboard</h2>
+  <div class="note">Locked points only count what's mathematically decided. Projected = if today's tables froze. Max = best case from here.</div>
+  <div class="lb" id="lb"></div>
+</section>
+
+<section>
+  <h2>Who called it</h2>
+  <div class="note">Every knockout game with each player's pick for that slot. Green = nailed it, red = busted, neutral = still alive.</div>
+  <div id="games"></div>
+</section>
+
+<section>
+  <h2>Group race</h2>
+  <div class="note">Live tables vs everyone's predicted order. A lit chip is a team currently sitting exactly where predicted — points lock when the group finishes.</div>
+  <div class="groups" id="groups"></div>
+</section>
+
+<section>
+  <h2>Predicted brackets</h2>
+  <div class="ptabs" id="ptabs"></div>
+  <div class="bwrap" id="bracket"></div>
+</section>
+
+<section>
+  <h2>Scoring</h2>
+  <div class="legend" id="legend"></div>
+</section>
+
+<footer>
+  Pool tracker for the lads. Schedule/groups/knockout pages based on
+  <a href="https://kingdoggydog.github.io/worldcup2026/">kingdoggydog's worldcup2026</a>;
+  data from football-data.org.
+</footer>
+
+<script src="brackets.js"></script>
+<script>
+(function(){
+'use strict';
+const W = window.WCBrackets;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let state = null;          // computeAll output
+let selected = null;       // selected player for bracket viewer
+let loadSeq = 0;           // drops out-of-order fetch completions
+try { selected = localStorage.getItem('wc2026_pool_player') || null; } catch(e){}
+
+// Player files are friend-supplied: never let their color reach a style attr raw.
+function safeColor(c){
+  return /^#[0-9a-fA-F]{3,8}$/.test(c || '') ? c : '#888';
+}
+
+const ROUND_LABEL = {
+  LAST_32: 'Round of 32', LAST_16: 'Round of 16',
+  QUARTER_FINALS: 'Quarter-finals', SEMI_FINALS: 'Semi-finals', FINAL: 'Final',
+};
+
+function crest(tla){
+  const m = state.meta[tla];
+  if (m && m.crest) return '<img src="' + esc(m.crest) + '" alt="" loading="lazy">';
+  return '';
+}
+function tname(tla){
+  const m = state.meta[tla];
+  return m ? m.name : tla;
+}
+function fmtDate(utc){
+  const d = new Date(utc);
+  const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getUTCDate() + ' ' + mo[d.getUTCMonth()];
+}
+
+// Placeholder text for slots whose real teams aren't known yet.
+function slotPlaceholder(id){
+  const src = W.R32_SOURCES[id];
+  if (src) {
+    const part = (s) => s[0] === '1' ? 'Win ' + s[1] : s[0] === '2' ? '2nd ' + s[1] : '3rd pool';
+    return part(src[0]) + ' v ' + part(src[1]);
+  }
+  const f = W.FEEDERS[id];
+  if (f) return 'Win M' + W.MATCH_NUM[f[0]] + ' v Win M' + W.MATCH_NUM[f[1]];
+  return 'TBD';
+}
+
+// ------------------------------------------------------------ leaderboard
+function renderLeaderboard(){
+  const max = { groups: 48 * W.SCORING.groupExact, thirds: 8 * W.SCORING.thirdQualifier,
+    knockout: 16*W.SCORING.reachR16 + 8*W.SCORING.reachQF + 4*W.SCORING.reachSF +
+              2*W.SCORING.reachFinal + W.SCORING.champion };
+  const medals = {1:'\u{1F3C6}', 2:'\u{1F948}', 3:'\u{1F949}'};
+  $('lb').innerHTML = state.rows.map((row) => {
+    const s = row.score;
+    const champ = row.championPick;
+    const dead = champ ? state.actual.eliminated.has(champ) : false;
+    const won = champ && state.actual.champion === champ;
+    const rankLabel = (row.tied ? 'T-' : '') + row.rank;
+    const medal = medals[row.rank] ? medals[row.rank] + (row.tied ? ' ' + rankLabel : '')
+      : '#' + rankLabel;
+    const bar = (k, label) => {
+      const c = s.cat[k];
+      const lockedPct = Math.min(100, 100 * c.locked / max[k]);
+      const projPct = Math.max(0, Math.min(100, 100 * (c.projected - c.locked) / max[k]));
+      return '<div class="bar"><span>' + label + '</span>' +
+        '<span class="tr"><span class="f" style="width:' + lockedPct + '%"></span>' +
+        '<span class="fp" style="width:' + projPct + '%"></span></span>' +
+        '<span class="v">' + c.locked + ' / ' + max[k] + '</span></div>';
+    };
+    return '<div class="lbc' + (row.rank === 1 ? ' first' : '') + '">' +
+      '<div class="rank">' + medal + '</div>' +
+      '<div class="who"><span class="dot" style="background:' + safeColor(row.player.color) + '"></span>' +
+      '<span class="name">' + esc(row.player.name) + '</span></div>' +
+      '<div class="pts"><span class="big">' + s.locked + '</span>' +
+      '<span class="small">projected <b>' + s.projected + '</b><br>max <b>' + s.max + '</b></span></div>' +
+      '<div class="bars">' + bar('groups','Groups') + bar('thirds','3rd places') + bar('knockout','Knockout') + '</div>' +
+      '<div class="champ' + (dead ? ' dead' : '') + '">Champion pick: ' + crest(champ) +
+      '<span class="t">' + esc(tname(champ)) + '</span>' +
+      (won ? ' \u{1F3C6}' : dead ? ' \u{1F480}' : ' · alive') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ---------------------------------------------------------- who called it
+function renderGames(){
+  const byRound = {};
+  for (const idStr of Object.keys(W.ROUND_OF)) {
+    const id = Number(idStr);
+    (byRound[W.ROUND_OF[id]] = byRound[W.ROUND_OF[id]] || []).push(id);
+  }
+  $('games').innerHTML = W.ROUNDS.map((round) => {
+    const ids = (byRound[round] || []).sort((a, b) => {
+      const sa = state.actual.slots[a], sb = state.actual.slots[b];
+      return new Date((sa && sa.utcDate) || 0) - new Date((sb && sb.utcDate) || 0) || a - b;
+    });
+    const rows = ids.map((id) => {
+      const real = state.actual.slots[id] || {};
+      const known = real.home && real.away;
+      let fixture, score = '';
+      if (known) {
+        fixture = crest(real.home) + '<span>' + esc(tname(real.home)) + '</span>' +
+          (real.winner === real.home ? '<span class="winflag">◀</span>' : '') +
+          '<span class="ph">v</span>' + crest(real.away) +
+          '<span>' + esc(tname(real.away)) + '</span>' +
+          (real.winner === real.away ? '<span class="winflag">◀</span>' : '');
+      } else {
+        fixture = '<span class="ph">' + esc(slotPlaceholder(id)) + '</span>';
+      }
+      if (real.finished || real.live) {
+        const m = state.matchById[id];
+        const ft = m && m.score && m.score.fullTime;
+        if (ft && ft.home != null) {
+          score = '<span class="score' + (real.live ? ' live' : '') + '">' +
+            ft.home + '–' + ft.away + (real.live ? ' ●' : '') + '</span>';
+        }
+      }
+      const picks = state.rows.map((row) => {
+        // The engine's verdict (team-identity scoring) — never re-derive
+        // per-slot, or the grid disagrees with the leaderboard when a team
+        // advances via a different path than predicted.
+        const d = row.score.detail.picks[id];
+        if (!d) return '';
+        const cls = d.status === 'hit' ? ' hit' : d.status === 'miss' ? ' miss' : '';
+        const mark = d.status === 'hit' ? ' <span aria-hidden="true">✓</span>' : '';
+        const sr = d.status === 'hit' ? 'correct' : d.status === 'miss' ? 'busted' : 'still alive';
+        return '<span class="chip' + cls + '" aria-label="' + esc(row.player.name) +
+          ' picked ' + esc(tname(d.pick)) + ' — ' + sr + '">' + crest(d.pick) +
+          '<span class="tla">' + esc(d.pick) + '</span>' + mark +
+          '<span class="owner">' + esc(row.player.name) + '</span></span>';
+      }).join('');
+      return '<div class="gamerow">' +
+        '<div class="mn">M' + W.MATCH_NUM[id] + '<br>' + fmtDate(real.utcDate || '') + '</div>' +
+        '<div class="fixture">' + fixture + '</div>' + score +
+        '<div class="picks">' + picks + '</div></div>';
+    }).join('');
+    return '<div class="round"><h3>' + ROUND_LABEL[round] + '</h3>' + rows + '</div>';
+  }).join('');
+}
+
+// ------------------------------------------------------------- group race
+function renderGroups(){
+  $('groups').innerHTML = W.GROUPS.map((g) => {
+    const rows = state.standings.table[g];
+    const done = state.standings.complete[g];
+    const started = rows.some((r) => r.p > 0);
+    const table = rows.map((r, i) =>
+      '<tr><td class="pos">' + (i + 1) + '</td>' +
+      '<td class="tm">' + crest(r.tla) + esc(tname(r.tla)) + '</td>' +
+      '<td class="num">' + (started ? r.p + ' pld' : '') + '</td>' +
+      '<td class="num"><b>' + (started ? r.pts + ' pts' : '–') + '</b></td></tr>'
+    ).join('');
+    const prows = state.rows.map((row) => {
+      const det = row.score.detail.groups[g] || [];
+      const seq = det.map((d) => {
+        const cls = d.status === 'hit' ? 'hit' : d.status === 'miss' ? 'miss' :
+          d.status === 'on' ? 'on' : '';
+        const sr = d.status === 'hit' ? ' (locked correct)' :
+          d.status === 'miss' ? ' (locked wrong)' :
+          d.status === 'on' ? ' (currently exact)' : '';
+        return '<span class="mini ' + cls + '" aria-label="' + esc(d.tla) + sr + '">' +
+          esc(d.tla) + (d.status === 'on' ? '<span aria-hidden="true">•</span>' :
+          d.status === 'hit' ? '<span aria-hidden="true">✓</span>' : '') + '</span>';
+      }).join('');
+      return '<div class="prow"><span class="pn" style="color:' +
+        safeColor(row.player.color) + '">' + esc(row.player.name) + '</span>' +
+        '<span class="seq">' + seq + '</span></div>';
+    }).join('');
+    return '<div class="gcard"><h3>Group ' + g +
+      ' <span class="st' + (done ? ' done' : '') + '">' +
+      (done ? 'final ✓' : started ? 'in progress' : 'not started') + '</span></h3>' +
+      '<table>' + table + '</table>' + prows + '</div>';
+  }).join('');
+}
+
+// -------------------------------------------------------- bracket viewer
+function renderTabs(){
+  $('ptabs').innerHTML = state.rows.map((row) =>
+    '<button class="ptab' + (row.player.name === selected ? ' on' : '') + '" data-p="' +
+    esc(row.player.name) + '">' + esc(row.player.name) + '</button>').join('');
+  Array.prototype.forEach.call(document.querySelectorAll('.ptab'), (b) => {
+    b.onclick = function(){
+      selected = this.getAttribute('data-p');
+      try { localStorage.setItem('wc2026_pool_player', selected); } catch(e){}
+      renderTabs(); renderBracket();
+    };
+  });
+}
+
+function teamFate(tla, round){
+  // Has this team really achieved / been ruled out of reaching `round`?
+  // Round here = the round the team is shown IN (i.e. predicted to reach).
+  // Mirrors the engine: the published bracket and status-based round
+  // completion always outrank table-derived reasoning.
+  const act = state.actual;
+  if (round === 'CHAMP') {
+    if (act.champion === tla) return 'ok';
+    if (act.eliminated.has(tla)) return 'dead';
+    return act.roundDone.FINAL ? 'dead' : 'open';
+  }
+  if (round === 'LAST_32') {
+    if (act.inBracket.has(tla)) return 'ok'; // named in a real fixture = in
+    if (act.eliminated.has(tla)) return 'dead';
+    const g = W.GROUPS.find((x) => state.standings.table[x].some((r) => r.tla === tla));
+    if (g && state.standings.complete[g]) {
+      const rows = state.standings.table[g];
+      const pos = rows.findIndex((r) => r.tla === tla);
+      const run = state.standings.uncertainRun[g] || {};
+      // Top two advance; a fair-play tie only matters if its run dips to 3rd+.
+      const runReaches3rd = run[pos] != null &&
+        [2, 3].some((i) => run[i] === run[pos]);
+      if (pos <= 1 && !runReaches3rd) return 'ok';
+      if (pos === 2 && state.thirds.decided &&
+          state.thirds.qualifiers.indexOf(tla) !== -1) return 'ok';
+    }
+    return 'open';
+  }
+  if (act.reached[round] && act.reached[round].has(tla)) return 'ok';
+  if (act.eliminated.has(tla)) return 'dead';
+  // Previous round fully played out without this team advancing -> dead,
+  // even if a data glitch left one match winnerless.
+  const PREV = { LAST_16: 'LAST_32', QUARTER_FINALS: 'LAST_16',
+    SEMI_FINALS: 'QUARTER_FINALS', FINAL: 'SEMI_FINALS' };
+  if (PREV[round] && act.roundDone[PREV[round]]) return 'dead';
+  return 'open';
+}
+
+function renderBracket(){
+  const row = state.rows.find((r) => r.player.name === selected) || state.rows[0];
+  if (!row) { $('bracket').innerHTML = ''; return; }
+  const byRound = {};
+  for (const idStr of Object.keys(W.ROUND_OF)) {
+    const id = Number(idStr);
+    (byRound[W.ROUND_OF[id]] = byRound[W.ROUND_OF[id]] || []).push(id);
+  }
+  $('bracket').innerHTML = W.ROUNDS.map((round) => {
+    const ids = (byRound[round] || []).sort((a, b) => {
+      const sa = state.actual.slots[a], sb = state.actual.slots[b];
+      return new Date((sa && sa.utcDate) || 0) - new Date((sb && sb.utcDate) || 0) || a - b;
+    });
+    const boxes = ids.map((id) => {
+      const slot = row.pred.slots[id] || {};
+      const real = state.actual.slots[id] || {};
+      const team = (tla) => {
+        if (!tla) return '<div class="t"><span class="ph">?</span></div>';
+        const fate = teamFate(tla, round);
+        const isPick = slot.winner === tla;
+        const mark = fate === 'ok' ? '✓' : fate === 'dead' ? '✗' : '';
+        return '<div class="t' + (isPick ? ' pickw' : '') +
+          (fate === 'dead' ? ' dead' : fate === 'ok' ? ' ok' : '') + '">' +
+          crest(tla) + '<span class="nm">' + esc(tname(tla)) + '</span>' +
+          '<span class="mark">' + mark + '</span></div>';
+      };
+      return '<div class="bm"><div class="lbl">M' + W.MATCH_NUM[id] + ' · ' +
+        fmtDate(real.utcDate || '') + '</div>' + team(slot.home) + team(slot.away) + '</div>';
+    }).join('');
+    return '<div class="bcol"><h4>' + ROUND_LABEL[round] + '</h4>' +
+      '<div class="stack">' + boxes + '</div></div>';
+  }).join('') +
+  // champion column
+  (function(){
+    const champ = row.championPick;
+    if (!champ) return '';
+    const fate = teamFate(champ, 'CHAMP');
+    return '<div class="bcol"><h4>Champion</h4><div class="stack"><div class="bm">' +
+      '<div class="lbl">' + esc(row.player.name) + "'s winner</div>" +
+      '<div class="t pickw' + (fate === 'dead' ? ' dead' : fate === 'ok' ? ' ok' : '') + '">' +
+      crest(champ) + '<span class="nm">' + esc(tname(champ)) + '</span>' +
+      '<span class="mark">' + (fate === 'ok' ? '\u{1F3C6}' : fate === 'dead' ? '✗' : '') +
+      '</span></div></div></div></div>';
+  })();
+}
+
+// ----------------------------------------------------------------- legend
+function renderLegend(){
+  const S = W.SCORING;
+  $('legend').innerHTML =
+    '<b>Groups:</b> ' + S.groupExact + ' pt per team in the exact predicted position (locks when the group finishes). ' +
+    '<b>Third places:</b> ' + S.thirdQualifier + ' pt per correctly picked third-place qualifier. ' +
+    '<b>Knockout</b> (per team you advanced that really advances, whatever the path): ' +
+    'into R16 = ' + S.reachR16 + ', QF = ' + S.reachQF + ', SF = ' + S.reachSF +
+    ', Final = ' + S.reachFinal + '. <b>Champion:</b> ' + S.champion + ' pts. Max ' +
+    (48*S.groupExact + 8*S.thirdQualifier + 16*S.reachR16 + 8*S.reachQF + 4*S.reachSF +
+     2*S.reachFinal + S.champion) + '. ' +
+    '<b>Ranking</b> is by locked points only — players level on locked points are shown tied (T-rank); ' +
+    'projected and max are informational. Group positions resting on FIFA fair-play/lots tiebreaks ' +
+    'stay unlocked until the official Round-of-32 lineup confirms them.';
+}
+
+// ------------------------------------------------------------------- load
+async function load(){
+  const seq = ++loadSeq;
+  try {
+    const bust = '?t=' + new Date().getTime();
+    const dataRes = await fetch('data.json' + bust);
+    if (!dataRes.ok) throw new Error('data.json HTTP ' + dataRes.status);
+    const data = await dataRes.json();
+    const idxRes = await fetch('predictions/players.json' + bust);
+    if (!idxRes.ok) throw new Error('players.json HTTP ' + idxRes.status);
+    const idx = await idxRes.json();
+    // One broken friend file must not take the pool down for everyone.
+    const settled = await Promise.allSettled(idx.map(async (f) => {
+      const r = await fetch('predictions/' + f + bust);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }));
+    if (seq !== loadSeq) return; // a newer load finished first
+    const players = [];
+    const fileErrors = [];
+    settled.forEach((s, i) => {
+      if (s.status === 'fulfilled') players.push(s.value);
+      else fileErrors.push(idx[i] + ': ' + s.reason.message);
+    });
+    state = W.computeAll(data, players);
+    state.matchById = {};
+    for (const m of data.matches) state.matchById[m.id] = m;
+
+    const problems = []
+      .concat(fileErrors)
+      .concat(state.broken.map((b) => b.name + ': ' + b.error))
+      .concat(state.actual.problems)
+      .concat(state.rows.flatMap((r) =>
+        r.pred.problems.map((p) => r.player.name + ': ' + p)));
+    const errEl = $('err');
+    if (problems.length) {
+      errEl.style.display = 'block';
+      errEl.innerHTML = '<b>Data issues:</b><br>' + problems.map(esc).join('<br>');
+    } else {
+      errEl.style.display = 'none';
+    }
+    if (!selected || !state.rows.some((r) => r.player.name === selected)) {
+      selected = state.rows[0] && state.rows[0].player.name;
+    }
+    const scrollX = $('bracket').scrollLeft; // keep the user's place in the scroller
+    renderLeaderboard(); renderGames(); renderGroups();
+    renderTabs(); renderBracket(); renderLegend();
+    $('bracket').scrollLeft = scrollX;
+  } catch (e) {
+    if (seq !== loadSeq) return;
+    const errEl = $('err');
+    errEl.style.display = 'block';
+    errEl.textContent = 'Could not load pool data: ' + e.message;
+  }
+}
+load();
+setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>
