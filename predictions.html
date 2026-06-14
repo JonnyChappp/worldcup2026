@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bracket Pool — FIFA World Cup 2026</title>
+<title>Group + Brackets — FIFA World Cup 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -132,13 +132,16 @@ footer a{color:var(--sub)}
 </head>
 <body>
 <div class="hdr">
-  <h1>Bracket Pool</h1>
-  <div class="sub">FIFA World Cup 2026 — who actually knows ball?</div>
+  <h1>Group + Brackets</h1>
+  <div class="sub">FIFA World Cup 2026 — the original full-tournament brackets: who actually knows ball?</div>
   <nav class="nav">
     <a href="index.html">&#128197; Schedule</a>
     <a href="groups.html">&#128202; Groups</a>
     <a href="bracket.html">&#127942; Knockout</a>
-    <a href="predictions.html" class="on">&#127919; Brackets</a>
+    <a href="nextgame.html">&#9197;&#65039; Next Game</a>
+    <a href="predictions.html" class="on">&#127919; Group + Brackets</a>
+    <a href="brackets.html">&#128302; Brackets</a>
+    <a href="picks.html">&#9999;&#65039; Picks</a>
   </nav>
 </div>
 
@@ -180,6 +183,7 @@ footer a{color:var(--sub)}
 </footer>
 
 <script src="brackets.js"></script>
+<script src="pool-ui.js"></script>
 <script>
 (function(){
 'use strict';
@@ -303,7 +307,10 @@ function renderLeaderboard(){
     return '<div class="lbc' + (row.rank === 1 ? ' first' : '') + '">' +
       '<div class="rank">' + medal + '</div>' +
       '<div class="who"><span class="dot" style="background:' + safeColor(row.player.color) + '"></span>' +
-      '<span class="name">' + esc(row.player.name) + '</span></div>' +
+      '<span class="name">' + esc(row.player.name) + '</span>' +
+      ((row.player._local || row.player._unpublished) ?
+        '<span style="color:var(--gold);font-size:11px;font-weight:600;margin-left:4px">unpublished</span>' : '') +
+      '</div>' +
       '<div class="pts"><span class="big">' + s.locked + '</span>' +
       '<span class="small">projected <b>' + s.projected + '</b><br>max <b>' + s.max + '</b></span></div>' +
       '<div class="bars">' + bar('groups','Groups') + bar('thirds','3rd places') + bar('knockout','Knockout') + '</div>' +
@@ -521,12 +528,17 @@ async function load(){
       return r.json();
     }));
     if (seq !== loadSeq) return; // a newer load finished first
-    const players = [];
+    const committed = [];
     const fileErrors = [];
     settled.forEach((s, i) => {
-      if (s.status === 'fulfilled') players.push(s.value);
+      if (s.status === 'fulfilled') committed.push(s.value);
       else fileErrors.push(idx[i] + ': ' + s.reason.message);
     });
+    // Committed files + this device's local submissions (tagged in the UI).
+    // This pool scores full brackets, so it only shows players who drew one
+    // (a matchPicks-only submission belongs to the other pools, not here).
+    const players = (window.PoolUI ? window.PoolUI.mergedPlayers(committed) : committed)
+      .filter((p) => p.groups && W.GROUPS.some((g) => (p.groups[g] || []).length === 4));
     state = W.computeAll(data, players);
     state.matchById = {};
     for (const m of data.matches) state.matchById[m.id] = m;
@@ -535,7 +547,10 @@ async function load(){
       .concat(fileErrors)
       .concat(state.broken.map((b) => b.name + ': ' + b.error))
       .concat(state.actual.problems)
+      // A friend's in-progress local bracket shouldn't spam the shared error
+      // banner — its issues surface for them on the Picks page when they save.
       .concat(state.rows.flatMap((r) =>
+        (r.player._local || r.player._unpublished) ? [] :
         r.pred.problems.map((p) => r.player.name + ': ' + p)));
     const errEl = $('err');
     if (problems.length) {

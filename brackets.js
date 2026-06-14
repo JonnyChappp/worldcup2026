@@ -1,5 +1,6 @@
 /* Bracket-prediction engine for the friends pool.
- * Pure logic, no DOM — loaded by predictions.html in the browser and by
+ * Pure logic, no DOM — loaded by the pool pages (predictions.html,
+ * nextgame.html, brackets.html, picks.html) in the browser and by
  * tests/run-tests.js under node. Works entirely in TLA space (football-data.org
  * three-letter codes); display names/crests come from data.json at render time.
  */
@@ -796,6 +797,259 @@
     return { locked, projected, max, cat, detail };
   }
 
+  // ---------------------------------------------------- per-game match picks
+
+  /* Players can also call every individual game: `matchPicks` in the player
+   * file maps a football-data match id to the winning TLA, or 'DRAW' for a
+   * group-stage stalemate. These helpers power the Next Game page and the
+   * per-game Brackets pool. */
+
+  /**
+   * Schedule split for "what's on": live games, the next kickoff, and the
+   * ordered queue of everything still to play. Postponed/cancelled games
+   * carry stale dates, so they never block the front of the queue.
+   */
+  function upcomingMatches(matches) {
+    const sorted = matches.slice().sort((x, y) =>
+      x.utcDate < y.utcDate ? -1 : x.utcDate > y.utcDate ? 1 : x.id - y.id);
+    const live = sorted.filter((m) => m.status === 'IN_PLAY' || m.status === 'PAUSED');
+    const queue = sorted.filter((m) => !isFinal(m.status) &&
+      m.status !== 'IN_PLAY' && m.status !== 'PAUSED' &&
+      m.status !== 'POSTPONED' && m.status !== 'CANCELLED');
+    return { live, next: queue[0] || null, queue };
+  }
+
+  /**
+   * Judge one per-game pick against a match: 'hit'/'miss' once the game is
+   * final, 'live'/'open' before that, 'none' without a pick. Knockout games
+   * decided on penalties resolve through score.winner, which football-data
+   * sets even when fullTime is level.
+   */
+  function judgePick(match, pick) {
+    if (!pick) return 'none';
+    if (!isFinal(match.status)) {
+      return (match.status === 'IN_PLAY' || match.status === 'PAUSED')
+        ? 'live' : 'open';
+    }
+    const home = match.homeTeam && match.homeTeam.tla;
+    const away = match.awayTeam && match.awayTeam.tla;
+    const w = match.score && match.score.winner;
+    let outcome = w === 'HOME_TEAM' ? home : w === 'AWAY_TEAM' ? away :
+      w === 'DRAW' ? 'DRAW' : null;
+    if (!outcome) {
+      const s = matchGoals(match);
+      if (s) outcome = s.home === s.away ? 'DRAW' : s.home > s.away ? home : away;
+    }
+    if (!outcome) return 'open'; // final but the data yields no outcome
+    return pick === outcome ? 'hit' : 'miss';
+  }
+
+  /** Running tally of one player's per-game picks across `matches`. */
+  function pickRecord(matches, picks) {
+    const rec = { hits: 0, misses: 0, open: 0, picked: 0 };
+    if (!picks) return rec;
+    for (const m of matches) {
+      const v = judgePick(m, picks[m.id]);
+      if (v === 'none') continue;
+      rec.picked++;
+      if (v === 'hit') rec.hits++;
+      else if (v === 'miss') rec.misses++;
+      else rec.open++;
+    }
+    return rec;
+  }
+
+  /**
+   * Sanity-check a matchPicks object against the schedule (hand-edited files):
+   * ids must exist, picks must be a fixture team, DRAW is group-stage only.
+   * Unknown-team fixtures (knockout TBD slots) skip the team check.
+   */
+  function validateMatchPicks(picks, matches) {
+    const problems = [];
+    if (!picks || typeof picks !== 'object') return problems;
+    const byId = {};
+    for (const m of matches) byId[m.id] = m;
+    for (const key of Object.keys(picks)) {
+      const m = byId[key];
+      const pick = picks[key];
+      const label = MATCH_NUM[key] ? 'M' + MATCH_NUM[key] : 'match ' + key;
+      if (!m) { problems.push('matchPicks: unknown match id ' + key); continue; }
+      if (pick === 'DRAW') {
+        if (m.stage !== 'GROUP_STAGE') {
+          problems.push('matchPicks: ' + label +
+            ' is a knockout game — DRAW is not a valid pick');
+        }
+        continue;
+      }
+      const h = m.homeTeam && m.homeTeam.tla;
+      const a = m.awayTeam && m.awayTeam.tla;
+      if (h && a && pick !== h && pick !== a) {
+        problems.push('matchPicks: ' + label + ' pick ' + pick +
+          ' is not ' + h + ' or ' + a);
+      }
+    }
+    return problems;
+  }
+
+  // ---------------------------------------------- bracket builder (picks.html)
+
+  /* Per R32 slot that takes a third-place team, the pool of groups that third
+   * may come from — derived straight from R32_SOURCES, paired with the group
+   * winner that occupies the other side of the slot. */
+  const THIRD_SLOTS = (function () {
+    const out = {};
+    for (const idStr of Object.keys(R32_SOURCES)) {
+      const [hs, as] = R32_SOURCES[idStr];
+      const third = hs[0] === '3' ? hs : as[0] === '3' ? as : null;
+      if (!third) continue;
+      const winner = hs[0] === '1' ? hs : as[0] === '1' ? as : null;
+      out[idStr] = { pool: third[1], thirdSide: hs[0] === '3' ? 'home' : 'away',
+        winnerGroup: winner ? winner[1] : null };
+    }
+    return out;
+  })();
+
+  /** Teams in each group, in the order football-data first lists them. */
+  function groupTeams(matches) {
+    const out = {};
+    for (const g of GROUPS) out[g] = [];
+    for (const m of matches) {
+      if (m.stage !== 'GROUP_STAGE' || !m.group) continue;
+      const g = m.group.replace('GROUP_', '');
+      if (!out[g]) continue;
+      for (const t of [m.homeTeam, m.awayTeam]) {
+        if (t && t.tla && out[g].indexOf(t.tla) === -1) out[g].push(t.tla);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Assign each qualifying third-place GROUP to a distinct R32 third-slot whose
+   * pool contains it (bipartite matching, augmenting-path). Returns
+   * { slotOfGroup: {G: slotId} } or null if no perfect matching exists — the
+   * exact assignment is scoring-irrelevant (knockout scoring is team-identity),
+   * it only has to respect the pools so predictedSlots validates cleanly.
+   */
+  function matchThirds(groups) {
+    const slotIds = Object.keys(THIRD_SLOTS);
+    const want = groups.slice().sort(); // stable, deterministic output
+    const slotTaken = {};            // slotId -> group
+    const tryAssign = (grp, seen) => {
+      for (const id of slotIds) {
+        if (THIRD_SLOTS[id].pool.indexOf(grp) === -1 || seen.has(id)) continue;
+        seen.add(id);
+        if (slotTaken[id] == null || tryAssign(slotTaken[id], seen)) {
+          slotTaken[id] = grp;
+          return true;
+        }
+      }
+      return false;
+    };
+    for (const grp of want) {
+      if (!tryAssign(grp, new Set())) return null;
+    }
+    const slotOfGroup = {};
+    for (const id of Object.keys(slotTaken)) slotOfGroup[slotTaken[id]] = id;
+    return { slotOfGroup };
+  }
+
+  /**
+   * Resolve a full predicted bracket structure from group orders + the eight
+   * third-place qualifiers, for the on-site builder. Fills every slot's
+   * participants (R32 from seeds + matched thirds, later rounds left for the
+   * caller to chain as winners are picked). Returns
+   * { r32: [{id, home, away, thirdSide}], problems }.
+   */
+  function resolveBracketStructure(groupsObj, thirdQualifiers) {
+    const problems = [];
+    const seed = {};
+    for (const g of GROUPS) {
+      const order = (groupsObj && groupsObj[g]) || [];
+      if (order.length !== 4) problems.push('Group ' + g + ' needs all 4 teams ordered');
+      if (order[0]) seed['1' + g] = order[0];
+      if (order[1]) seed['2' + g] = order[1];
+      if (order[2]) seed['3' + g] = order[2];
+    }
+    const tq = thirdQualifiers || [];
+    if (tq.length !== 8) problems.push('Pick exactly 8 third-place teams (have ' + tq.length + ')');
+
+    // Which group does each qualified third belong to (by predicted 3rd place)?
+    const qualGroups = [];
+    for (const tla of tq) {
+      const g = GROUPS.find((x) => seed['3' + x] === tla);
+      if (!g) problems.push(tla + ' is not predicted to finish 3rd in any group');
+      else qualGroups.push(g);
+    }
+    let slotOfGroup = {};
+    if (qualGroups.length === 8 && new Set(qualGroups).size === 8) {
+      const m = matchThirds(qualGroups);
+      if (!m) {
+        problems.push('These 8 third-place teams can’t be slotted into the ' +
+          'bracket together — swap one out (each R32 third-place spot only takes ' +
+          'certain groups).');
+      } else {
+        slotOfGroup = m.slotOfGroup;
+      }
+    }
+
+    const r32 = [];
+    for (const idStr of Object.keys(R32_SOURCES)) {
+      const id = Number(idStr);
+      const [hs, as] = R32_SOURCES[idStr];
+      const resolveSide = (src) => {
+        if (src[0] === '3') {
+          const grp = Object.keys(slotOfGroup).find((g) => slotOfGroup[g] === idStr);
+          return grp ? seed['3' + grp] || null : null;
+        }
+        return seed[src[0] + src[1]] || null;
+      };
+      r32.push({
+        id, home: resolveSide(hs), away: resolveSide(as),
+        thirdSide: hs[0] === '3' ? 'home' : as[0] === '3' ? 'away' : null,
+      });
+    }
+    return { r32, problems };
+  }
+
+  /**
+   * Build the `knockout` object + champion from a structure and the caller's
+   * winner picks (slotId -> winning TLA). Later-round participants are chained
+   * through FEEDERS from the winners, so a half-finished bracket serializes
+   * with nulls rather than throwing. Mirrors the player-file schema that
+   * predictedSlots consumes.
+   */
+  function serializeBracket(r32, winners) {
+    const slotTeams = {};
+    for (const s of r32) slotTeams[s.id] = { home: s.home, away: s.away };
+    const mk = (id) => ({
+      home: slotTeams[id] ? slotTeams[id].home : null,
+      away: slotTeams[id] ? slotTeams[id].away : null,
+      winner: winners[id] || null,
+    });
+    const byRound = { LAST_32: [], LAST_16: [], QUARTER_FINALS: [], SEMI_FINALS: [], FINAL: [] };
+    for (const s of r32) byRound.LAST_32.push(mk(s.id));
+    for (const round of ROUNDS.slice(1)) {
+      for (const idStr of Object.keys(FEEDERS)) {
+        const id = Number(idStr);
+        if (ROUND_OF[id] !== round) continue;
+        const [fa, fb] = FEEDERS[id];
+        slotTeams[id] = { home: winners[fa] || null, away: winners[fb] || null };
+        byRound[round].push(mk(id));
+      }
+    }
+    return {
+      knockout: {
+        roundOf32: byRound.LAST_32,
+        roundOf16: byRound.LAST_16,
+        quarterFinals: byRound.QUARTER_FINALS,
+        semiFinals: byRound.SEMI_FINALS,
+        final: byRound.FINAL,
+      },
+      champion: winners[537390] || null,
+    };
+  }
+
   /**
    * Everything the page needs, in one call. A malformed player file degrades
    * to an error row instead of taking the whole pool down.
@@ -843,6 +1097,8 @@
     PRED_ROUND_KEYS,
     teamMeta, calcStandings, rankThirds, predictedSlots, actualState,
     scorePlayer, computeAll, officialPositions, feasiblePositions,
+    upcomingMatches, judgePick, pickRecord, validateMatchPicks,
+    THIRD_SLOTS, groupTeams, matchThirds, resolveBracketStructure, serializeBracket,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Make Your Picks — FIFA World Cup 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A; --card:#141829; --box:#1C2235; --line:#262d45;
+  --text:#E8EAF2; --sub:#7A82A8; --gold:#C9A84C;
+  --hit:#2ECC71; --miss:#E74C3C; --live:#4DA3FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;padding:14px 16px 120px}
+h1,h2,h3{font-family:'Barlow Condensed',sans-serif}
+.hdr{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px;margin-bottom:18px}
+.hdr h1{color:var(--gold);text-transform:uppercase;font-weight:800;font-size:clamp(20px,4vw,30px);letter-spacing:.5px}
+.hdr .sub{color:var(--sub);font-size:14px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.nav a{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text);text-decoration:none;border:1.5px solid var(--line);border-radius:8px;
+  padding:6px 14px;font-size:14px;font-weight:600}
+.nav a.on{background:var(--gold);border-color:var(--gold);color:#0A0E1A}
+section{margin-bottom:26px}
+section>h2{color:var(--gold);text-transform:uppercase;font-size:20px;letter-spacing:.8px;margin-bottom:4px}
+section>.note{color:var(--sub);font-size:13px;margin-bottom:12px}
+section>.note a{color:var(--gold)}
+.err{background:#3a1320;border:1px solid var(--miss);border-radius:10px;padding:10px 14px;
+  color:#ffb4b4;font-size:14px;margin-bottom:18px;display:none}
+.hide{display:none!important}
+
+/* who-bar */
+.people{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.pchip{display:inline-flex;align-items:center;gap:7px;background:var(--box);border:1.5px solid var(--line);
+  border-radius:999px;padding:5px 8px 5px 12px;font-size:14px;font-weight:600;cursor:pointer}
+.pchip.on{border-color:var(--gold)}
+.pchip .dot{width:11px;height:11px;border-radius:50%}
+.pchip .x{color:var(--sub);font-size:15px;line-height:1;padding:0 2px;border-radius:6px}
+.pchip .x:hover{color:var(--miss)}
+.pchip.add{border-style:dashed;color:var(--gold)}
+
+/* who form */
+.whoform{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;max-width:560px}
+.whoform label{display:block;color:var(--sub);font-size:13px;margin:0 0 6px}
+.whoform input[type=text]{width:100%;background:var(--box);border:1.5px solid var(--line);color:var(--text);
+  border-radius:9px;padding:10px 12px;font-size:16px;font-family:'Barlow',sans-serif}
+.whoform .warn{color:var(--miss);font-size:13px;margin-top:6px;min-height:1em}
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2.5px solid transparent}
+.swatch.on{border-color:var(--text)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+
+/* mode cards */
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.mode{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;text-align:left}
+.mode.on{border-color:var(--gold)}
+.mode.disabled{opacity:.5;cursor:not-allowed}
+.mode h3{font-size:20px;color:var(--text);margin-bottom:6px}
+.mode .d{color:var(--sub);font-size:13px;line-height:1.5}
+.mode .badge{display:inline-block;margin-top:8px;font-size:12px;color:var(--gold);font-weight:600}
+.subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.subnav button{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-weight:600;font-size:14px;
+  letter-spacing:.5px;border:1.5px solid var(--line);background:none;color:var(--text);
+  border-radius:8px;padding:6px 14px;cursor:pointer}
+.subnav button.on{background:var(--gold);border-color:var(--gold);color:#0A0E1A}
+.subnav button .c{color:var(--hit);font-weight:700;margin-left:4px}
+.subnav button.on .c{color:#0A0E1A}
+
+/* group cards (every-game + full-bracket order) */
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.gcard h3{font-size:18px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;gap:8px;align-items:baseline}
+.gcard h3 .st{font-size:12px;color:var(--sub);font-weight:500;letter-spacing:0;text-transform:none;margin-left:auto}
+.gcard h3 .st.full{color:var(--hit)}
+.gcard h3 .clr{font-size:11px;color:var(--sub);cursor:pointer;text-decoration:underline;letter-spacing:0;text-transform:none}
+
+/* every-game rows */
+.prow{padding:7px 0;border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:none}
+.prow .pdate{color:var(--sub);font-size:11.5px;margin-bottom:4px;display:flex;gap:8px;align-items:center}
+.prow .pdate .res{margin-left:auto;font-weight:600;color:var(--text)}
+.prow .pdate .res .ok{color:var(--hit)} .prow .pdate .res .bad{color:var(--miss)}
+.pseg{display:flex;gap:6px}
+.pbtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--box);border:1.5px solid var(--line);color:var(--text);border-radius:8px;
+  padding:6px 4px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;min-width:0;white-space:nowrap}
+.pbtn img{width:18px;height:18px;object-fit:contain;flex-shrink:0}
+.pbtn.draw{flex:.55;color:var(--sub)}
+.pbtn.on{background:rgba(201,168,76,.18);border-color:var(--gold);color:var(--gold)}
+.pbtn.on.draw{color:var(--gold)}
+.pbtn:disabled{opacity:.45;cursor:not-allowed}
+
+/* order rows (tap-to-rank) */
+.orow{display:flex;align-items:center;gap:9px;width:100%;background:var(--box);border:1.5px solid var(--line);
+  color:var(--text);border-radius:9px;padding:8px 10px;font-size:14px;font-weight:600;cursor:pointer;
+  margin-bottom:6px;font-family:'Barlow',sans-serif;text-align:left}
+.orow:last-child{margin-bottom:0}
+.orow img{width:20px;height:20px;object-fit:contain}
+.orow .rk{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;background:var(--line);color:var(--sub);flex-shrink:0}
+.orow.r1{border-color:var(--gold)} .orow.r1 .rk{background:var(--gold);color:#0A0E1A}
+.orow.r2{border-color:#9fb0e0} .orow.r2 .rk{background:#9fb0e0;color:#0A0E1A}
+.orow.r3{border-color:#7A82A8} .orow.r3 .rk{background:#7A82A8;color:#0A0E1A}
+.orow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* thirds chips */
+.thirds{display:flex;gap:8px;flex-wrap:wrap}
+.tchip{display:inline-flex;align-items:center;gap:6px;background:var(--box);border:1.5px solid var(--line);
+  color:var(--text);border-radius:9px;padding:7px 11px;font-size:14px;font-weight:600;cursor:pointer}
+.tchip img{width:18px;height:18px;object-fit:contain}
+.tchip .g{color:var(--sub);font-size:12px}
+.tchip.on{border-color:var(--gold);background:rgba(201,168,76,.16);color:var(--gold)}
+.tchip:disabled{opacity:.4;cursor:not-allowed}
+
+/* interactive bracket */
+.bwrap{overflow-x:auto;padding-bottom:8px}
+.bgrid{display:grid;column-gap:14px;min-width:1520px}
+.blab{font-family:'Barlow Condensed',sans-serif;color:var(--sub);text-transform:uppercase;
+  font-size:13px;letter-spacing:1px;text-align:center;padding-bottom:8px;align-self:end}
+.bgrid .bm{align-self:center;margin:3px 0;min-width:0}
+.bm{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:5px 7px}
+.bm .lbl{color:var(--sub);font-size:10.5px;margin-bottom:3px}
+.bm .bt{display:flex;align-items:center;gap:6px;width:100%;background:var(--box);border:1px solid var(--line);
+  color:var(--text);border-radius:7px;padding:5px 7px;font-size:13px;font-weight:600;cursor:pointer;
+  margin:2px 0;font-family:'Barlow',sans-serif;text-align:left}
+.bm .bt img{width:16px;height:16px;object-fit:contain;flex-shrink:0}
+.bm .bt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bm .bt.win{border-color:var(--gold);background:rgba(201,168,76,.18);color:var(--gold)}
+.bm .bt.ph{color:var(--sub);cursor:default;font-weight:500}
+.bm .champline{border-top:1px solid var(--line);margin-top:5px;padding-top:5px;color:var(--gold);font-size:13px;font-weight:700}
+.locknote{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--sub);font-size:14px;line-height:1.6}
+.locknote b{color:var(--text)}
+
+/* sticky save bar */
+.savebar{position:fixed;left:0;right:0;bottom:0;background:rgba(10,14,26,.96);border-top:1px solid var(--line);
+  padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;z-index:10}
+.savebar .prog{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.4px}
+.savebar .prog b{color:var(--gold)}
+.savebar .msg{color:var(--sub);font-size:12.5px;flex:1;min-width:180px}
+.savebar .msg.good{color:var(--hit)} .savebar .msg.bad{color:var(--miss)}
+.savebtn{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-weight:700;font-size:16px;
+  letter-spacing:.8px;background:var(--gold);color:#0A0E1A;border:none;border-radius:8px;padding:9px 26px;cursor:pointer}
+.savebtn:disabled{opacity:.5;cursor:not-allowed}
+.btn2{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-weight:600;font-size:14px;letter-spacing:.5px;
+  background:none;border:1.5px solid var(--line);color:var(--text);border-radius:8px;padding:8px 16px;cursor:pointer}
+.howto{background:var(--card);border:1px solid var(--gold);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:14px;line-height:1.7;color:var(--sub)}
+.howto b{color:var(--gold)} .howto code{background:var(--box);padding:1px 6px;border-radius:5px;color:var(--text)}
+footer{margin-top:30px;color:var(--sub);font-size:12px}
+footer a{color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Make Your Picks</h1>
+  <div class="sub">Add yourself and call the tournament — no JSON, no spreadsheets</div>
+  <nav class="nav">
+    <a href="index.html">&#128197; Schedule</a>
+    <a href="groups.html">&#128202; Groups</a>
+    <a href="bracket.html">&#127942; Knockout</a>
+    <a href="nextgame.html">&#9197;&#65039; Next Game</a>
+    <a href="predictions.html">&#127919; Group + Brackets</a>
+    <a href="brackets.html">&#128302; Brackets</a>
+    <a href="picks.html" class="on">&#9999;&#65039; Picks</a>
+  </nav>
+</div>
+
+<div class="err" id="err"></div>
+
+<section id="people-sec">
+  <h2>Who's picking?</h2>
+  <div class="note">Pick up an entry you started on this device, or add a new person.
+    Entries live on this device until you download and send the file — see the steps after you save.</div>
+  <div class="people" id="people"></div>
+</section>
+
+<section id="who-sec" class="hide">
+  <div class="whoform">
+    <label for="nameInput">Your name</label>
+    <input type="text" id="nameInput" autocomplete="off" placeholder="e.g. Sam" maxlength="24">
+    <div class="warn" id="nameWarn"></div>
+    <label style="margin-top:14px">Your colour</label>
+    <div class="swatches" id="swatches"></div>
+    <div class="row">
+      <button class="savebtn" id="whoGo">Start picking</button>
+      <button class="btn2" id="whoCancel">Cancel</button>
+    </div>
+  </div>
+</section>
+
+<section id="mode-sec" class="hide">
+  <h2>What do you want to predict?</h2>
+  <div class="note">Do as many as you like — they all save into your one file. You can switch between them up top.</div>
+  <div class="modes" id="modes"></div>
+</section>
+
+<section id="build-sec" class="hide">
+  <div class="subnav" id="subnav"></div>
+  <div id="builder"></div>
+</section>
+
+<footer id="foot">
+  Pool tracker for the lads · see the calls on
+  <a href="nextgame.html">Next Game</a>, <a href="predictions.html">Group + Brackets</a>,
+  and <a href="brackets.html">Brackets</a>.
+</footer>
+
+<div class="savebar hide" id="savebar">
+  <span class="prog" id="prog"></span>
+  <span class="msg" id="msg"></span>
+  <button class="btn2" id="backBtn">Modes</button>
+  <button class="savebtn" id="save">Save &amp; download</button>
+</div>
+
+<script src="brackets.js"></script>
+<script src="pool-ui.js"></script>
+<script>
+(function(){
+'use strict';
+const W = window.WCBrackets;
+const U = window.PoolUI;
+const $ = (id) => document.getElementById(id);
+
+const COLORS = ['#ff8a3d','#4da3ff','#2ECC71','#C9A84C','#e056fd','#ff6b81',
+  '#26d0ce','#f9ca24','#a29bfe','#55efc4','#fd79a8','#74b9ff'];
+const R32_IDS = Object.keys(W.R32_SOURCES).map(Number);
+const KO_IDS = Object.keys(W.ROUND_OF).map(Number);
+
+let data = null, meta = {}, gteams = {};
+let committedNames = [];     // lower-cased names already in players.json
+let realR32 = null;          // {id:{home,away}} from data.json, if published
+let current = null;          // {slug, player} being edited
+let mode = null;             // 'every' | 'full' | 'ko'
+let fullSection = 'order';   // sub-step within full-bracket builder
+
+const kickedOff = (m) => m.status && m.status !== 'TIMED' && m.status !== 'SCHEDULED' && m.status !== 'POSTPONED';
+const groupGames = () => data.matches.filter((m) => m.stage === 'GROUP_STAGE' &&
+  m.homeTeam && m.homeTeam.tla && m.awayTeam && m.awayTeam.tla)
+  .sort((x,y) => x.utcDate < y.utcDate ? -1 : x.utcDate > y.utcDate ? 1 : x.id - y.id);
+
+// ---------------------------------------------------------------- people bar
+function renderPeople(){
+  const subs = U.listSubmissions();
+  const chips = subs.map((s) =>
+    '<span class="pchip' + (current && current.slug === s.slug ? ' on' : '') +
+    '" data-slug="' + U.esc(s.slug) + '"><span class="dot" style="background:' +
+    U.safeColor(s.player.color) + '"></span>' + U.esc(s.player.name) +
+    '<span class="x" data-del="' + U.esc(s.slug) + '" title="Remove from this device">✕</span></span>').join('');
+  $('people').innerHTML = chips +
+    '<span class="pchip add" id="addNew">＋ New person</span>';
+  $('addNew').onclick = showWho;
+  Array.prototype.forEach.call(document.querySelectorAll('.pchip[data-slug]'), (el) => {
+    el.onclick = function(e){
+      if (e.target.hasAttribute('data-del')) return;
+      openSubmission(this.getAttribute('data-slug'));
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-del]'), (el) => {
+    el.onclick = function(e){
+      e.stopPropagation();
+      const slug = this.getAttribute('data-del');
+      const s = U.listSubmissions().find((x) => x.slug === slug);
+      if (confirm('Remove ' + (s ? s.player.name : 'this entry') +
+          ' from this device? (If you already downloaded and sent the file, it stays in the pool.)')) {
+        U.deleteSubmission(slug);
+        if (current && current.slug === slug) { current = null; toModes(true); }
+        renderPeople();
+      }
+    };
+  });
+}
+
+// ----------------------------------------------------------------- who form
+let pendingColor = COLORS[0];
+function showWho(){
+  current = null;
+  $('nameInput').value = '';
+  $('nameWarn').textContent = '';
+  pendingColor = COLORS.find((c) => !usedColors().has(c)) || COLORS[0];
+  renderSwatches();
+  show('who');
+  $('nameInput').focus();
+}
+function usedColors(){
+  return new Set(U.listSubmissions().map((s) => U.safeColor(s.player.color)));
+}
+function renderSwatches(){
+  $('swatches').innerHTML = COLORS.map((c) =>
+    '<span class="swatch' + (c === pendingColor ? ' on' : '') + '" data-c="' + c +
+    '" style="background:' + c + '"></span>').join('');
+  Array.prototype.forEach.call(document.querySelectorAll('.swatch'), (el) => {
+    el.onclick = function(){ pendingColor = this.getAttribute('data-c'); renderSwatches(); };
+  });
+}
+$('whoCancel').onclick = function(){ show(current ? 'build' : 'people-only'); };
+$('nameInput').oninput = function(){
+  const n = this.value.trim();
+  const slug = U.slugify(n);
+  let w = '';
+  if (committedNames.indexOf(n.toLowerCase()) !== -1) {
+    w = '“' + n + '” is already in the published pool — picking the same name will ' +
+      'overlay theirs on this device. Use a new name unless that’s you.';
+  } else if (U.listSubmissions().some((s) => s.slug === slug && (!current || current.slug !== slug))) {
+    w = 'You already have an entry called that on this device — it’ll open that one.';
+  }
+  $('nameWarn').textContent = w;
+};
+$('whoGo').onclick = function(){
+  const name = $('nameInput').value.trim();
+  if (!name) { $('nameWarn').textContent = 'Enter a name first.'; return; }
+  const slug = U.slugify(name);
+  const existing = U.getSubmission(slug);
+  const player = existing ? existing.player
+    : { name, color: pendingColor, source: 'Made on the site ' + new Date().toISOString().slice(0,10) };
+  player.name = name;
+  if (!existing) player.color = pendingColor;
+  current = { slug, player };
+  U.saveSubmission(slug, player);
+  renderPeople();
+  toModes();
+};
+
+function openSubmission(slug){
+  const s = U.getSubmission(slug);
+  if (!s) return;
+  current = { slug, player: s.player };
+  renderPeople();
+  toModes();
+}
+
+// ------------------------------------------------------------------- modes
+function modeBadge(p){
+  return {
+    every: p.matchPicks ? Object.keys(p.matchPicks).filter((id) => !W.ROUND_OF[id]).length : 0,
+    full: (p.groups ? W.GROUPS.filter((g)=>(p.groups[g]||[]).length===4).length : 0),
+    ko: p.matchPicks ? Object.keys(p.matchPicks).filter((id) => W.ROUND_OF[id]).length : 0,
+  };
+}
+function toModes(skipShow){
+  mode = null;
+  const p = current ? current.player : {};
+  const b = modeBadge(p);
+  const koReady = !!realR32;
+  $('modes').innerHTML =
+    modeCard('every','Every game','Call the winner (or a draw) of all 72 group-stage games.',
+      b.every ? b.every + ' / 72 picked' : '', false) +
+    modeCard('full','Full bracket','Order all 12 groups, choose who escapes the group, and pick winners all the way to the trophy. (The “Group + Brackets” pool.)',
+      b.full ? b.full + ' / 12 groups set' : '', false) +
+    modeCard('ko','Knockout only', koReady
+      ? 'The real Round-of-32 is set — pick winners through to the final. (The “Brackets” pool.)'
+      : 'Pick knockout winners once the group stage decides who plays who (after 28 Jun).',
+      b.ko ? b.ko + ' knockout picks' : '', !koReady);
+  Array.prototype.forEach.call(document.querySelectorAll('.mode'), (el) => {
+    if (el.classList.contains('disabled')) return;
+    el.onclick = function(){ mode = this.getAttribute('data-m'); fullSection = 'order'; openBuilder(); };
+  });
+  if (!skipShow) show('mode');
+  else show('people-only');
+}
+function modeCard(m, title, desc, badge, disabled){
+  return '<button class="mode' + (disabled ? ' disabled' : '') + '" data-m="' + m + '"' +
+    (disabled ? ' disabled' : '') + '><h3>' + title + '</h3><div class="d">' + desc + '</div>' +
+    (badge ? '<div class="badge">✓ ' + U.esc(badge) + '</div>' : '') + '</button>';
+}
+
+// ----------------------------------------------------------------- builders
+function openBuilder(){
+  show('build');
+  renderSubnav();
+  renderBuilder();
+  updateBar();
+}
+function renderSubnav(){
+  const p = current.player;
+  const b = modeBadge(p);
+  const tab = (m, label, count) =>
+    '<button class="' + (mode === m ? 'on' : '') + '" data-m="' + m + '">' + label +
+    (count ? '<span class="c">' + count + '</span>' : '') + '</button>';
+  $('subnav').innerHTML =
+    tab('every','Every game', b.every) +
+    tab('full','Full bracket', b.full ? b.full + '/12' : 0) +
+    (realR32 ? tab('ko','Knockout', b.ko) : '');
+  Array.prototype.forEach.call($('subnav').querySelectorAll('button'), (el) => {
+    el.onclick = function(){ mode = this.getAttribute('data-m'); fullSection = 'order'; openBuilder(); };
+  });
+}
+function renderBuilder(){
+  if (mode === 'every') renderEvery();
+  else if (mode === 'full') renderFull();
+  else if (mode === 'ko') renderKO();
+}
+
+// --- builder: every game ---------------------------------------------------
+function renderEvery(){
+  const p = current.player;
+  if (!p.matchPicks) p.matchPicks = {};
+  const games = groupGames();
+  let html = '<div class="note" style="color:var(--sub);font-size:13px;margin-bottom:12px">' +
+    'Home win · draw · away win for every group game. Games that already kicked off are locked. ' +
+    'Tap a chosen button again to clear it.</div><div class="groups">';
+  for (const g of W.GROUPS) {
+    const gg = games.filter((m) => m.group === 'GROUP_' + g);
+    const picked = gg.filter((m) => p.matchPicks[m.id]).length;
+    html += '<div class="gcard"><h3>Group ' + g + '<span class="st' +
+      (picked === gg.length ? ' full' : '') + '">' + picked + '/' + gg.length + '</span></h3>';
+    for (const m of gg) {
+      const h = m.homeTeam.tla, a = m.awayTeam.tla;
+      const pick = p.matchPicks[m.id] || null;
+      const started = kickedOff(m);
+      const ft = m.score && m.score.fullTime;
+      const verdict = W.judgePick(m, pick);
+      const res = (m.status === 'FINISHED' || m.status === 'AWARDED') && ft && ft.home != null
+        ? '<span class="res">FT ' + ft.home + '–' + ft.away +
+          (verdict==='hit'?' <span class="ok">✓</span>':verdict==='miss'?' <span class="bad">✗</span>':'') + '</span>'
+        : (m.status==='IN_PLAY'||m.status==='PAUSED') ? '<span class="res" style="color:var(--live)">LIVE</span>'
+        : started ? '<span class="res">🔒</span>' : '';
+      const btn = (val, label, extra) =>
+        '<button class="pbtn ' + extra + (pick === val ? ' on' : '') + '" data-eg="' + m.id +
+        '" data-v="' + U.esc(val) + '"' + (started ? ' disabled' : '') + '>' + label + '</button>';
+      html += '<div class="prow"><div class="pdate">' + U.fmtKickoff(m.utcDate) + res + '</div>' +
+        '<div class="pseg">' + btn(h, U.crest(meta,h)+U.esc(h), 'home') +
+        btn('DRAW','Draw','draw') + btn(a, U.crest(meta,a)+U.esc(a), 'away') + '</div></div>';
+    }
+    html += '</div>';
+  }
+  $('builder').innerHTML = html + '</div>';
+  Array.prototype.forEach.call($('builder').querySelectorAll('.pbtn'), (el) => {
+    el.onclick = function(){
+      const id = this.getAttribute('data-eg'), v = this.getAttribute('data-v');
+      if (p.matchPicks[id] === v) delete p.matchPicks[id]; else p.matchPicks[id] = v;
+      persist(); renderEvery(); renderSubnav(); updateBar();
+    };
+  });
+}
+
+// --- builder: full bracket -------------------------------------------------
+function renderFull(){
+  const p = current.player;
+  if (!p.groups) p.groups = {};
+  const ordered = W.GROUPS.filter((g) => (p.groups[g]||[]).length === 4).length;
+  const sub = (s, label) => '<button class="' + (fullSection===s?'on':'') +
+    '" data-fs="' + s + '">' + label + '</button>';
+  let html = '<div class="subnav" style="margin-bottom:10px">' +
+    sub('order','1 · Group order') + sub('thirds','2 · 3rd places') +
+    sub('ko','3 · Knockout') + '</div>';
+  if (fullSection === 'order') html += renderOrder();
+  else if (fullSection === 'thirds') html += renderThirds();
+  else html += renderFullKO();
+  $('builder').innerHTML = html;
+  Array.prototype.forEach.call($('builder').querySelectorAll('[data-fs]'), (el) => {
+    el.onclick = function(){ fullSection = this.getAttribute('data-fs'); renderFull(); };
+  });
+  wireFull();
+}
+function renderOrder(){
+  const p = current.player;
+  let html = '<div class="note" style="color:var(--sub);font-size:13px;margin-bottom:12px">' +
+    'Tap teams in the order you think they’ll finish — 1st, then 2nd, 3rd, 4th. ' +
+    'Tap a ranked team to redo from there.</div><div class="groups">';
+  for (const g of W.GROUPS) {
+    const order = p.groups[g] || [];
+    html += '<div class="gcard"><h3>Group ' + g +
+      (order.length ? '<span class="clr" data-clr="' + g + '">clear</span>' : '') +
+      '<span class="st' + (order.length===4?' full':'') + '">' + order.length + '/4</span></h3>';
+    for (const tla of gteams[g]) {
+      const rk = order.indexOf(tla);
+      html += '<button class="orow' + (rk>=0?' r'+Math.min(rk+1,3):'') + '" data-ord="' + g + '" data-t="' + tla + '">' +
+        '<span class="rk">' + (rk>=0 ? (rk+1) : '') + '</span>' + U.crest(meta,tla) +
+        '<span class="nm">' + U.esc(U.tname(meta,tla)) + '</span></button>';
+    }
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+function renderThirds(){
+  const p = current.player;
+  const allSet = W.GROUPS.every((g) => (p.groups[g]||[]).length === 4);
+  if (!allSet) return '<div class="locknote">Order all 12 groups first ' +
+    '(step 1) — then you’ll choose which 8 third-place teams advance.</div>';
+  if (!p.thirdPlaceQualifiers) p.thirdPlaceQualifiers = [];
+  const tq = p.thirdPlaceQualifiers;
+  let html = '<div class="note" style="color:var(--sub);font-size:13px;margin-bottom:12px">' +
+    'Eight of the twelve third-place teams advance. Pick your 8. ' +
+    '<b style="color:' + (tq.length===8?'var(--hit)':'var(--gold)') + '">' + tq.length + '/8</b></div>' +
+    '<div class="thirds">';
+  for (const g of W.GROUPS) {
+    const tla = p.groups[g][2];
+    const on = tq.indexOf(tla) !== -1;
+    const dis = !on && tq.length >= 8;
+    html += '<button class="tchip' + (on?' on':'') + '" data-third="' + tla +
+      '"' + (dis?' disabled':'') + '>' + U.crest(meta,tla) +
+      U.esc(U.tname(meta,tla)) + '<span class="g">' + g + '</span></button>';
+  }
+  return html + '</div>';
+}
+function renderFullKO(){
+  const p = current.player;
+  const allSet = W.GROUPS.every((g) => (p.groups[g]||[]).length === 4);
+  const tq = p.thirdPlaceQualifiers || [];
+  if (!allSet || tq.length !== 8) return '<div class="locknote">Finish ' +
+    '<b>step 1</b> (order all groups) and <b>step 2</b> (pick 8 third-place teams) ' +
+    'first — then the bracket fills in here and you pick the winners.</div>';
+  const struct = W.resolveBracketStructure(p.groups, tq);
+  if (struct.problems.length) return '<div class="locknote">' +
+    struct.problems.map(U.esc).join('<br>') + '</div>';
+  if (!p._fw) p._fw = {};
+  pruneWinners(baseTeamsFromR32(struct.r32), p._fw);
+  const baseTeams = {};
+  for (const s of struct.r32) baseTeams[s.id] = { home: s.home, away: s.away };
+  return '<div class="note" style="color:var(--sub);font-size:13px;margin-bottom:12px">' +
+    'Tap the team you think wins each game; winners advance automatically. ' +
+    'Your champion is whoever wins the final.</div>' +
+    bracketHTML(baseTeams, p._fw, true);
+}
+function wireFull(){
+  const p = current.player;
+  Array.prototype.forEach.call($('builder').querySelectorAll('[data-ord]'), (el) => {
+    el.onclick = function(){
+      const g = this.getAttribute('data-ord'), t = this.getAttribute('data-t');
+      const order = p.groups[g] || (p.groups[g] = []);
+      const i = order.indexOf(t);
+      if (i >= 0) order.splice(i); else if (order.length < 4) order.push(t);
+      // Changing a group order invalidates downstream thirds/knockout state.
+      p.thirdPlaceQualifiers = (p.thirdPlaceQualifiers||[]).filter((x) => W.GROUPS.some((gg)=>(p.groups[gg]||[])[2]===x));
+      p._fw = {};
+      persist(); renderFull(); renderSubnav(); updateBar();
+    };
+  });
+  Array.prototype.forEach.call($('builder').querySelectorAll('[data-clr]'), (el) => {
+    el.onclick = function(e){
+      e.stopPropagation();
+      const g = this.getAttribute('data-clr');
+      p.groups[g] = [];
+      p.thirdPlaceQualifiers = (p.thirdPlaceQualifiers||[]).filter((x) => W.GROUPS.some((gg)=>(p.groups[gg]||[])[2]===x));
+      p._fw = {};
+      persist(); renderFull(); renderSubnav(); updateBar();
+    };
+  });
+  Array.prototype.forEach.call($('builder').querySelectorAll('[data-third]'), (el) => {
+    el.onclick = function(){
+      const t = this.getAttribute('data-third');
+      const tq = p.thirdPlaceQualifiers || (p.thirdPlaceQualifiers = []);
+      const i = tq.indexOf(t);
+      if (i >= 0) tq.splice(i, 1); else if (tq.length < 8) tq.push(t);
+      p._fw = {};
+      persist(); renderFull(); renderSubnav(); updateBar();
+    };
+  });
+  wireBracket(p._fw, true);
+}
+
+// --- builder: knockout only ------------------------------------------------
+function renderKO(){
+  const p = current.player;
+  if (!realR32) { $('builder').innerHTML = '<div class="locknote">The knockout matchups ' +
+    'aren’t set yet — they’re decided when the group stage ends (around 28 Jun). ' +
+    'Check back then, or build a <b>Full bracket</b> now.</div>'; return; }
+  if (!p.matchPicks) p.matchPicks = {};
+  $('builder').innerHTML = '<div class="note" style="color:var(--sub);font-size:13px;margin-bottom:12px">' +
+    'The real Round-of-32 is set. Tap the winner of each game; winners advance automatically.</div>' +
+    bracketHTML(realR32, p.matchPicks, false);
+  wireBracket(p.matchPicks, false);
+}
+
+// --- shared interactive bracket --------------------------------------------
+// baseTeams: {r32Id:{home,away}}; winners mutated in place. For full-bracket
+// the winners map spans all rounds; for knockout-only it IS matchPicks.
+function baseTeamsFromR32(r32){
+  const t = {}; for (const s of r32) t[s.id] = { home: s.home, away: s.away }; return t;
+}
+function slotTeams(baseTeams, winners){
+  const t = {};
+  for (const id of R32_IDS) t[id] = baseTeams[id] || { home: null, away: null };
+  for (const round of W.ROUNDS.slice(1)) {
+    for (const id of KO_IDS) {
+      if (W.ROUND_OF[id] !== round) continue;
+      const f = W.FEEDERS[id];
+      t[id] = { home: winners[f[0]] || null, away: winners[f[1]] || null };
+    }
+  }
+  return t;
+}
+function pruneWinners(baseTeams, winners){
+  // Drop any winner no longer one of its slot's two teams (after an upstream change).
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const t = slotTeams(baseTeams, winners);
+    for (const id of KO_IDS) {
+      const w = winners[id];
+      if (w && w !== t[id].home && w !== t[id].away) { delete winners[id]; changed = true; }
+    }
+  }
+}
+function bracketHTML(baseTeams, winners, isFull){
+  const t = slotTeams(baseTeams, winners);
+  const box = (id) => {
+    const tm = t[id] || { home: null, away: null };
+    const teamBtn = (tla) => tla
+      ? '<button class="bt' + (winners[id]===tla?' win':'') + '" data-ko="' + id +
+        '" data-t="' + tla + '">' + U.crest(meta,tla) +
+        '<span class="nm">' + U.esc(U.tname(meta,tla)) + '</span></button>'
+      : '<div class="bt ph"><span class="nm">' + U.esc(U.slotPlaceholder(id)) + '</span></div>';
+    let html = '<div class="lbl">M' + W.MATCH_NUM[id] + '</div>' + teamBtn(tm.home) + teamBtn(tm.away);
+    if (id === U.FINAL_ID) {
+      const champ = winners[id];
+      html += '<div class="champline">🏆 ' + (champ ? U.esc(U.tname(meta,champ)) : 'pick the final') + '</div>';
+    }
+    return html;
+  };
+  return '<div class="bwrap"><div class="bgrid" style="grid-template-columns:repeat(9,minmax(150px,1fr))">' +
+    U.mirroredCells(box) + '</div></div>';
+}
+function wireBracket(winners, isFull){
+  const p = current.player;
+  Array.prototype.forEach.call($('builder').querySelectorAll('[data-ko]'), (el) => {
+    el.onclick = function(){
+      const id = Number(this.getAttribute('data-ko')), t = this.getAttribute('data-t');
+      winners[id] = (winners[id] === t) ? undefined : t;
+      if (winners[id] === undefined) delete winners[id];
+      const base = isFull
+        ? baseTeamsFromR32(W.resolveBracketStructure(p.groups, p.thirdPlaceQualifiers).r32)
+        : realR32;
+      pruneWinners(base, winners);
+      persist();
+      if (isFull) renderFull(); else renderKO();
+      renderSubnav(); updateBar();
+    };
+  });
+}
+
+// ------------------------------------------------------------ persist + save
+function persist(){
+  if (current) U.saveSubmission(current.slug, current.player);
+}
+function updateBar(){
+  const p = current.player;
+  const b = modeBadge(p);
+  let prog = '';
+  if (mode === 'every') prog = '<b>' + b.every + '</b> / 72 games';
+  else if (mode === 'full') {
+    const tq = (p.thirdPlaceQualifiers||[]).length;
+    const ko = Object.keys(p._fw||{}).length;
+    prog = '<b>' + b.full + '</b>/12 groups · <b>' + tq + '</b>/8 thirds · <b>' + ko + '</b>/31 winners';
+  } else if (mode === 'ko') prog = '<b>' + b.ko + '</b> knockout winners';
+  $('prog').innerHTML = prog;
+  $('msg').textContent = '';
+  $('msg').className = 'msg';
+}
+function buildFile(){
+  // Clean copy: drop transient/underscore fields; serialize full-bracket winners.
+  const p = current.player;
+  const out = { name: p.name, color: U.safeColor(p.color),
+    source: p.source || ('Made on the site ' + new Date().toISOString().slice(0,10)) };
+  if (p._fw && Object.keys(p._fw).length && p.groups &&
+      W.GROUPS.every((g)=>(p.groups[g]||[]).length===4) && (p.thirdPlaceQualifiers||[]).length===8) {
+    out.groups = p.groups;
+    out.thirdPlaceQualifiers = p.thirdPlaceQualifiers;
+    const struct = W.resolveBracketStructure(p.groups, p.thirdPlaceQualifiers);
+    const ser = W.serializeBracket(struct.r32, p._fw);
+    out.knockout = ser.knockout;
+    out.champion = ser.champion;
+  } else if (p.groups && W.GROUPS.some((g)=>(p.groups[g]||[]).length)) {
+    // Groups partially/fully ordered but no full knockout — still publish the order.
+    out.groups = p.groups;
+    if ((p.thirdPlaceQualifiers||[]).length) out.thirdPlaceQualifiers = p.thirdPlaceQualifiers;
+  }
+  if (p.matchPicks && Object.keys(p.matchPicks).length) {
+    // Stable id order for clean diffs.
+    const ids = Object.keys(p.matchPicks).sort((a,b)=>Number(a)-Number(b));
+    const mp = {}; for (const id of ids) mp[id] = p.matchPicks[id];
+    out.matchPicks = mp;
+  }
+  return out;
+}
+function save(){
+  if (!current) return;
+  const out = buildFile();
+  const problems = [];
+  if (out.knockout) problems.push.apply(problems, W.predictedSlots(out).problems);
+  problems.push.apply(problems, W.validateMatchPicks(out.matchPicks, data.matches));
+  // Keep transient working state (incl. _fw) in the device submission for resume.
+  persist();
+  const blob = new Blob([JSON.stringify(out, null, 2) + '\n'], { type: 'application/json' });
+  const aEl = document.createElement('a');
+  aEl.href = URL.createObjectURL(blob);
+  aEl.download = current.slug + '.json';
+  document.body.appendChild(aEl);
+  aEl.click();
+  setTimeout(() => { URL.revokeObjectURL(aEl.href); aEl.remove(); }, 1000);
+  const msg = $('msg');
+  if (problems.length) {
+    msg.className = 'msg bad';
+    msg.textContent = 'Downloaded with ' + problems.length + ' issue(s): ' + problems[0];
+  } else {
+    msg.className = 'msg good';
+    msg.textContent = 'Saved on this device & ' + current.slug + '.json downloaded ✓';
+  }
+  showHowto();
+}
+function showHowto(){
+  let el = $('howto');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'howto'; el.className = 'howto';
+    $('build-sec').appendChild(el);
+  }
+  el.innerHTML = '<b>Last step — get it into the pool:</b><br>' +
+    '1. Find the downloaded <code>' + U.esc(current.slug) + '.json</code>.<br>' +
+    '2. Send it to whoever runs the repo (or drop it in <code>predictions/</code> ' +
+    'and add <code>"' + U.esc(current.slug) + '.json"</code> to <code>predictions/players.json</code>).<br>' +
+    'Until then your picks show on <b>this device only</b> (tagged “unpublished”) on the ' +
+    '<a href="nextgame.html">Next Game</a> / <a href="predictions.html">Group + Brackets</a> / ' +
+    '<a href="brackets.html">Brackets</a> pages.';
+}
+
+// ------------------------------------------------------------ view switching
+function show(view){
+  $('who-sec').classList.toggle('hide', view !== 'who');
+  $('mode-sec').classList.toggle('hide', view !== 'mode');
+  $('build-sec').classList.toggle('hide', view !== 'build');
+  $('savebar').classList.toggle('hide', view !== 'build');
+  if (view !== 'build') { const h = $('howto'); if (h) h.remove(); }
+}
+$('backBtn').onclick = function(){ toModes(); };
+$('save').onclick = save;
+
+// ------------------------------------------------------------------- load
+async function load(){
+  try {
+    const bust = '?t=' + new Date().getTime();
+    const dataRes = await fetch('data.json' + bust);
+    if (!dataRes.ok) throw new Error('data.json HTTP ' + dataRes.status);
+    data = await dataRes.json();
+    meta = W.teamMeta(data.matches);
+    gteams = W.groupTeams(data.matches);
+    // Real R32 lineup, if football-data has published it (teams populated).
+    const byId = {}; for (const m of data.matches) byId[m.id] = m;
+    const r32 = {};
+    let allKnown = true;
+    for (const id of R32_IDS) {
+      const m = byId[id];
+      if (m && m.homeTeam && m.homeTeam.tla && m.awayTeam && m.awayTeam.tla) {
+        r32[id] = { home: m.homeTeam.tla, away: m.awayTeam.tla };
+      } else { allKnown = false; }
+    }
+    realR32 = allKnown ? r32 : null;
+    try {
+      const idxRes = await fetch('predictions/players.json' + bust);
+      if (idxRes.ok) {
+        const idx = await idxRes.json();
+        const settled = await Promise.allSettled(idx.map(async (f) => {
+          const r = await fetch('predictions/' + f + bust);
+          return r.ok ? r.json() : null;
+        }));
+        committedNames = settled.filter((s) => s.status==='fulfilled' && s.value)
+          .map((s) => String(s.value.name||'').toLowerCase());
+      }
+    } catch (e) { /* players.json optional for this page */ }
+    renderPeople();
+    show('people-only');
+  } catch (e) {
+    const errEl = $('err');
+    errEl.style.display = 'block';
+    errEl.textContent = 'Could not load: ' + e.message;
+  }
+}
+load();
+})();
+</script>
+</body>
+</html>

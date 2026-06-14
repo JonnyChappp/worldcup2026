@@ -427,6 +427,195 @@ console.log('\n[9] leaderboard tie handling');
     out.rows.map((r) => ({ name: r.player.name, rank: r.rank, tied: r.tied })));
 }
 
+// ------------------------------------------------- 10. per-game match picks
+console.log('\n[10] per-game match picks');
+{
+  const up = W.upcomingMatches(data.matches);
+  check('queue is date-sorted',
+    up.queue.every((m, i) => i === 0 || up.queue[i - 1].utcDate <= m.utcDate));
+  check('no finished games in the queue',
+    up.queue.every((m) => m.status !== 'FINISHED' && m.status !== 'AWARDED'));
+  check('live games are not in the queue',
+    up.queue.every((m) => m.status !== 'IN_PLAY' && m.status !== 'PAUSED'));
+  if (up.next) {
+    check('next is the earliest queued game', up.next.id === up.queue[0].id);
+  }
+
+  const fin = (id, h, a, hg, ag) => Object.assign(gm('A', h, a, hg, ag), { id });
+  const synth = [
+    fin(1, 'AAA', 'BBB', 2, 0),
+    Object.assign(gm('A', 'CCC', 'DDD', 1, 1, 'IN_PLAY'), { id: 2 }),
+    Object.assign(syntheticMatch({
+      id: 3, status: 'TIMED', utcDate: '2026-06-20T19:00:00Z',
+      homeTeam: { tla: 'EEE', name: 'EEE', shortName: 'EEE', crest: null },
+      awayTeam: { tla: 'FFF', name: 'FFF', shortName: 'FFF', crest: null },
+    })),
+    Object.assign(syntheticMatch({
+      id: 4, status: 'POSTPONED', utcDate: '2026-06-01T19:00:00Z',
+      homeTeam: { tla: 'GGG', name: 'GGG', shortName: 'GGG', crest: null },
+      awayTeam: { tla: 'HHH', name: 'HHH', shortName: 'HHH', crest: null },
+    })),
+  ];
+  const sUp = W.upcomingMatches(synth);
+  check('synthetic: live game detected', sUp.live.length === 1 && sUp.live[0].id === 2);
+  check('synthetic: postponed game never blocks the front of the queue',
+    sUp.next && sUp.next.id === 3, sUp.next && sUp.next.id);
+
+  check('judgePick: correct winner is a hit', W.judgePick(fin(1, 'AAA', 'BBB', 2, 0), 'AAA') === 'hit');
+  check('judgePick: wrong winner is a miss', W.judgePick(fin(1, 'AAA', 'BBB', 2, 0), 'BBB') === 'miss');
+  check('judgePick: DRAW pick hits a draw', W.judgePick(fin(1, 'AAA', 'BBB', 1, 1), 'DRAW') === 'hit');
+  check('judgePick: team pick misses a draw', W.judgePick(fin(1, 'AAA', 'BBB', 1, 1), 'AAA') === 'miss');
+  check('judgePick: live game is live', W.judgePick(synth[1], 'CCC') === 'live');
+  check('judgePick: future game is open', W.judgePick(synth[2], 'EEE') === 'open');
+  check('judgePick: no pick is none', W.judgePick(synth[2], null) === 'none');
+  const pens = Object.assign(syntheticMatch({
+    id: 5, stage: 'LAST_32', group: null, status: 'FINISHED',
+    homeTeam: { tla: 'III', name: 'III', shortName: 'III', crest: null },
+    awayTeam: { tla: 'JJJ', name: 'JJJ', shortName: 'JJJ', crest: null },
+    score: { winner: 'AWAY_TEAM', duration: 'PENALTY_SHOOTOUT',
+      fullTime: { home: 1, away: 1 }, halfTime: { home: 0, away: 0 } },
+  }));
+  check('judgePick: penalty winner resolves via score.winner',
+    W.judgePick(pens, 'JJJ') === 'hit' && W.judgePick(pens, 'III') === 'miss');
+
+  const rec = W.pickRecord(synth, { 1: 'AAA', 2: 'CCC', 3: 'DRAW' });
+  check('pickRecord tallies hits/open/picked',
+    rec.hits === 1 && rec.misses === 0 && rec.open === 2 && rec.picked === 3, rec);
+  const rec2 = W.pickRecord(synth, null);
+  check('pickRecord without picks is all zeroes', rec2.picked === 0 && rec2.hits === 0);
+
+  check('validateMatchPicks: clean picks pass',
+    W.validateMatchPicks({ 1: 'AAA', 3: 'DRAW' }, synth).length === 0,
+    W.validateMatchPicks({ 1: 'AAA', 3: 'DRAW' }, synth));
+  check('validateMatchPicks: unknown id flagged',
+    W.validateMatchPicks({ 99: 'AAA' }, synth).length === 1);
+  check('validateMatchPicks: non-fixture team flagged',
+    W.validateMatchPicks({ 1: 'ZZZ' }, synth).length === 1);
+  check('validateMatchPicks: DRAW on a knockout game flagged',
+    W.validateMatchPicks({ 5: 'DRAW' }, [pens]).length === 1);
+  check('validateMatchPicks: real player files are clean',
+    players.every((p) => W.validateMatchPicks(p.matchPicks, data.matches).length === 0));
+}
+
+// ------------------------------------------------- 11. full-bracket builder
+console.log('\n[11] full-bracket builder');
+{
+  check('THIRD_SLOTS has 8 entries, each with a winner group',
+    Object.keys(W.THIRD_SLOTS).length === 8 &&
+    Object.keys(W.THIRD_SLOTS).every((id) => W.THIRD_SLOTS[id].winnerGroup &&
+      W.THIRD_SLOTS[id].pool && W.THIRD_SLOTS[id].thirdSide));
+
+  const gt = W.groupTeams(data.matches);
+  check('groupTeams: 12 groups of 4', W.GROUPS.every((g) => gt[g].length === 4));
+
+  // matchThirds is feasible for ALL 495 selections of 8-of-12 groups.
+  function* combos(arr, k, start, cur) {
+    cur = cur || []; start = start || 0;
+    if (cur.length === k) { yield cur.slice(); return; }
+    for (let i = start; i < arr.length; i++) { cur.push(arr[i]); yield* combos(arr, k, i + 1, cur); cur.pop(); }
+  }
+  let feasible = 0, total = 0;
+  for (const c of combos(W.GROUPS, 8)) {
+    total++;
+    const m = W.matchThirds(c);
+    if (m) {
+      // every assignment respects the slot's pool
+      const ok = Object.keys(m.slotOfGroup).every((g) =>
+        W.THIRD_SLOTS[m.slotOfGroup[g]].pool.indexOf(g) !== -1);
+      const distinct = new Set(Object.values(m.slotOfGroup)).size === 8;
+      if (ok && distinct) feasible++;
+    }
+  }
+  check('matchThirds feasible & pool-valid for all 495 combos',
+    total === 495 && feasible === 495, { total, feasible });
+
+  const jon = JSON.parse(fs.readFileSync(path.join(root, 'predictions/jon.json'), 'utf8'));
+  const struct = W.resolveBracketStructure(jon.groups, jon.thirdPlaceQualifiers);
+  check('resolveBracketStructure: 0 problems for a valid input',
+    struct.problems.length === 0, struct.problems);
+  check('resolveBracketStructure: 16 R32 slots, all teams filled',
+    struct.r32.length === 16 && struct.r32.every((s) => s.home && s.away), struct.r32.length);
+
+  // Pick winners forward along the generated structure, serialize, round-trip.
+  const winners = {};
+  for (const s of struct.r32) winners[s.id] = s.home;
+  for (const round of W.ROUNDS.slice(1)) {
+    for (const idStr of Object.keys(W.FEEDERS)) {
+      const id = Number(idStr);
+      if (W.ROUND_OF[id] === round) winners[id] = winners[W.FEEDERS[id][0]];
+    }
+  }
+  const ser = W.serializeBracket(struct.r32, winners);
+  const file = Object.assign({}, jon, { knockout: ser.knockout, champion: ser.champion });
+  const pred = W.predictedSlots(file);
+  check('serializeBracket output validates with 0 problems',
+    pred.problems.length === 0, pred.problems.slice(0, 4));
+  check('serializeBracket: champion = winner of the final',
+    ser.champion === ser.knockout.final[0].winner && ser.champion === winners[537390]);
+  const filled = Object.values(pred.slots).filter((s) => s.home && s.away && s.winner).length;
+  check('generated bracket resolves all 31 slots', filled === 31, filled);
+  const sc = W.computeAll(data, [file]).rows[0].score;
+  check('generated bracket scores within bounds',
+    sc.locked <= sc.projected && sc.projected <= sc.max && sc.max <= 161, sc);
+
+  const bad = W.resolveBracketStructure({ A: ['MEX'] }, []);
+  check('resolveBracketStructure flags incomplete input', bad.problems.length > 0);
+  const halfWinners = {}; for (const s of struct.r32) halfWinners[s.id] = s.away;
+  const partial = W.serializeBracket(struct.r32, halfWinners);
+  check('serializeBracket tolerates a half-finished bracket (null later winners)',
+    partial.knockout.roundOf16.every((mu) => mu.winner === null) && partial.champion === null);
+}
+
+// ----------------------------------------------- 12. pool-ui submission model
+console.log('\n[12] pool-ui submission model (browser helpers under a shim)');
+{
+  const store = {};
+  global.window = global;
+  global.WCBrackets = W;
+  global.localStorage = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; },
+  };
+  delete require.cache[require.resolve('../pool-ui.js')];
+  require('../pool-ui.js');
+  const U = global.PoolUI;
+
+  check('slugify makes filename-safe stems',
+    U.slugify('  Sam O’Brien!! ') === 'sam-o-brien' && U.slugify('') === 'player');
+
+  U.saveSubmission('sam', { name: 'Sam', color: '#fff', matchPicks: { 537333: 'ESP' } });
+  check('saveSubmission round-trips via listSubmissions',
+    U.listSubmissions().length === 1 && U.listSubmissions()[0].player.name === 'Sam');
+
+  // Local-only name is added and tagged _local.
+  const committed = [{ name: 'Jon', matchPicks: { 537333: 'MEX' } }];
+  let merged = U.mergedPlayers(committed);
+  check('mergedPlayers: committed player passes through untagged',
+    merged.find((p) => p.name === 'Jon') && !merged.find((p) => p.name === 'Jon')._local);
+  check('mergedPlayers: local-only player added and tagged _local',
+    merged.find((p) => p.name === 'Sam') && merged.find((p) => p.name === 'Sam')._local);
+
+  // Same-name local submission overrides committed wholesale and tags _unpublished.
+  U.saveSubmission('jon', { name: 'Jon', matchPicks: { 537345: 'DRAW' } });
+  merged = U.mergedPlayers(committed);
+  const jonRow = merged.find((p) => p.name === 'Jon');
+  check('mergedPlayers: same-name local override is wholesale (no key merge) + tagged',
+    jonRow._unpublished && !jonRow.matchPicks[537333] && jonRow.matchPicks[537345] === 'DRAW',
+    jonRow.matchPicks);
+
+  // REGRESSION (was: cleared picks resurrected). A submission that drops a pick
+  // must NOT have the old committed value reappear.
+  U.saveSubmission('jon', { name: 'Jon', matchPicks: {} });
+  const jonRow2 = U.mergedPlayers(committed).find((p) => p.name === 'Jon');
+  check('regression: cleared pick does not resurrect from the committed file',
+    Object.keys(jonRow2.matchPicks || {}).length === 0, jonRow2.matchPicks);
+
+  U.deleteSubmission('sam'); U.deleteSubmission('jon');
+  check('deleteSubmission clears the index',
+    U.listSubmissions().length === 0);
+}
+
 // ---------------------------------------------------------------- wrap up
 console.log('');
 if (failures) { console.log(failures + ' FAILURE(S)'); process.exit(1); }

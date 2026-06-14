@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Next Game — FIFA World Cup 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A; --card:#141829; --box:#1C2235; --line:#262d45;
+  --text:#E8EAF2; --sub:#7A82A8; --gold:#C9A84C;
+  --hit:#2ECC71; --miss:#E74C3C; --live:#4DA3FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;padding:14px 16px 60px}
+h1,h2,h3,.cond{font-family:'Barlow Condensed',sans-serif}
+.hdr{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px;margin-bottom:18px}
+.hdr h1{color:var(--gold);text-transform:uppercase;font-weight:800;font-size:clamp(20px,4vw,30px);letter-spacing:.5px}
+.hdr .sub{color:var(--sub);font-size:14px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.nav a{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text);text-decoration:none;border:1.5px solid var(--line);border-radius:8px;
+  padding:6px 14px;font-size:14px;font-weight:600}
+.nav a.on{background:var(--gold);border-color:var(--gold);color:#0A0E1A}
+section{margin-bottom:34px}
+section>h2{color:var(--gold);text-transform:uppercase;font-size:20px;letter-spacing:.8px;margin-bottom:4px}
+section>.note{color:var(--sub);font-size:13px;margin-bottom:12px}
+section>.note a{color:var(--gold)}
+.err{background:#3a1320;border:1px solid var(--miss);border-radius:10px;padding:10px 14px;
+  color:#ffb4b4;font-size:14px;margin-bottom:18px;display:none}
+
+/* pick chips */
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--box);border:1px solid var(--line);
+  border-radius:7px;padding:2px 8px 2px 5px;font-size:13px;font-weight:600;white-space:nowrap}
+.chip img{width:17px;height:17px;object-fit:contain}
+.chip.hit{border-color:var(--hit);background:rgba(46,204,113,.13)}
+.chip.miss{border-color:var(--miss);background:rgba(231,76,60,.10);color:#d99}
+.chip.miss .tla{text-decoration:line-through}
+.chip.none{opacity:.55;border-style:dashed}
+.chip.draft{border-style:dashed;border-color:var(--gold)}
+.chip .owner{font-size:11px;color:var(--sub);font-weight:500}
+
+/* match cards */
+.mcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-bottom:12px}
+.mcard.islive{border-color:var(--live)}
+.mcard .meta{color:var(--sub);font-size:13px;margin-bottom:8px}
+.mcard .meta b{color:var(--gold)}
+.mcard .lv{color:var(--live);font-weight:700}
+.mcard .fixture{display:flex;align-items:center;gap:12px;font-weight:600;flex-wrap:wrap}
+.mcard .team{display:flex;align-items:center;gap:8px;min-width:0}
+.mcard .team img{width:21px;height:21px;object-fit:contain;flex-shrink:0}
+.mcard .vs{color:var(--sub);font-size:13px}
+.mcard .vs.sc{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:var(--text)}
+.mcard .vs.sc.live{color:var(--live)}
+.mcard .wpicks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.mcard.hero{border-color:var(--gold);padding:18px 20px}
+.mcard.hero.islive{border-color:var(--live)}
+.mcard.hero .fixture{font-size:clamp(18px,3.4vw,27px);font-family:'Barlow Condensed',sans-serif;
+  text-transform:uppercase;letter-spacing:.5px}
+.mcard.hero .team img{width:34px;height:34px}
+.mcard.hero .vs.sc{font-size:clamp(20px,3.4vw,30px)}
+
+/* pick records */
+.recs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.recc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.recc .who{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.recc .dot{width:11px;height:11px;border-radius:50%}
+.recc .name{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.recc .line{color:var(--sub);font-size:13px;line-height:1.6}
+.recc .line b{color:var(--text)}
+.recc .line .h{color:var(--hit)}
+.recc .line .m{color:var(--miss)}
+footer{margin-top:30px;color:var(--sub);font-size:12px}
+footer a{color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Next Game</h1>
+  <div class="sub">FIFA World Cup 2026 — every game called, group stage to final</div>
+  <nav class="nav">
+    <a href="index.html">&#128197; Schedule</a>
+    <a href="groups.html">&#128202; Groups</a>
+    <a href="bracket.html">&#127942; Knockout</a>
+    <a href="nextgame.html" class="on">&#9197;&#65039; Next Game</a>
+    <a href="predictions.html">&#127919; Group + Brackets</a>
+    <a href="brackets.html">&#128302; Brackets</a>
+    <a href="picks.html">&#9999;&#65039; Picks</a>
+  </nav>
+</div>
+
+<div class="err" id="err"></div>
+
+<section id="live-sec" style="display:none">
+  <h2>Live now</h2>
+  <div id="live"></div>
+</section>
+
+<section>
+  <h2>Next up</h2>
+  <div class="note">The next kickoff and how everyone called it. Group-stage calls come from
+    <a href="picks.html">match picks</a>; knockout games fall back to each player's original
+    bracket (tagged &ldquo;bracket&rdquo;) until they have a per-game pick.</div>
+  <div id="next"></div>
+</section>
+
+<section>
+  <h2>On deck</h2>
+  <div class="note">The games after that.</div>
+  <div id="deck"></div>
+</section>
+
+<section>
+  <h2>Pick records</h2>
+  <div class="note">Per-game calls so far — group stage has 72 games.
+    Missing picks? <a href="picks.html">Fill them in here</a>.</div>
+  <div class="recs" id="recs"></div>
+</section>
+
+<footer>
+  Pool tracker for the lads · <a href="predictions.html">Group + Brackets pool</a> ·
+  <a href="brackets.html">Brackets pool</a> · data from football-data.org
+</footer>
+
+<script src="brackets.js"></script>
+<script src="pool-ui.js"></script>
+<script>
+(function(){
+'use strict';
+const W = window.WCBrackets;
+const U = window.PoolUI;
+const $ = (id) => document.getElementById(id);
+
+let state = null;     // computeAll output + matches
+let loadSeq = 0;
+
+// Each player's call on one game: their per-game pick first (a locally-drafted,
+// not-yet-published player is tagged), then the original bracket pick for
+// knockout slots as a fallback (tagged 'bracket').
+function picksFor(m){
+  return state.rows.map((row) => {
+    const mp = row.player.matchPicks || {};
+    let pick = mp[m.id] || null;
+    let tag = pick && (row.player._local || row.player._unpublished) ? 'unpublished' : null;
+    if (!pick && W.ROUND_OF[m.id]) {
+      const d = row.score.detail.picks[m.id];
+      if (d && d.pick) { pick = d.pick; tag = 'bracket'; }
+    }
+    return { name: row.player.name, pick, status: W.judgePick(m, pick), tag };
+  });
+}
+
+function render(matches){
+  const up = W.upcomingMatches(matches);
+
+  const liveSec = $('live-sec');
+  if (up.live.length) {
+    liveSec.style.display = '';
+    $('live').innerHTML = up.live.map((m) =>
+      U.matchCard(state.meta, m, picksFor(m), { hero: true })).join('');
+  } else {
+    liveSec.style.display = 'none';
+  }
+
+  // Simultaneous kickoffs (last group round) are all "next".
+  const heroes = up.next
+    ? up.queue.filter((m) => m.utcDate === up.next.utcDate)
+    : [];
+  $('next').innerHTML = heroes.length
+    ? heroes.map((m) => U.matchCard(state.meta, m, picksFor(m), { hero: true })).join('')
+    : '<div class="mcard"><div class="meta">That’s it — the tournament is over.</div></div>';
+
+  const deck = up.queue.slice(heroes.length, heroes.length + 8);
+  $('deck').innerHTML = deck.length
+    ? deck.map((m) => U.matchCard(state.meta, m, picksFor(m))).join('')
+    : '<div class="mcard"><div class="meta">Nothing else scheduled.</div></div>';
+
+  const groupGames = matches.filter((m) => m.stage === 'GROUP_STAGE');
+  $('recs').innerHTML = state.rows.map((row) => {
+    const mp = row.player.matchPicks || {};
+    const rec = W.pickRecord(groupGames, mp);
+    const knockoutRec = W.pickRecord(
+      matches.filter((m) => m.stage !== 'GROUP_STAGE'), mp);
+    const flag = row.player._local || row.player._unpublished;
+    return '<div class="recc">' +
+      '<div class="who"><span class="dot" style="background:' +
+      U.safeColor(row.player.color) + '"></span>' +
+      '<span class="name">' + U.esc(row.player.name) + '</span>' +
+      (flag ? '<span style="color:var(--gold);font-size:11px;font-weight:600"> · unpublished</span>' : '') +
+      '</div>' +
+      '<div class="line">Group games picked: <b>' + rec.picked + ' / ' +
+      groupGames.length + '</b><br>' +
+      'Record: <b class="h">' + rec.hits + ' ✓</b> · <b class="m">' +
+      rec.misses + ' ✗</b> · ' + rec.open + ' open' +
+      (knockoutRec.picked
+        ? '<br>Knockout: <b class="h">' + knockoutRec.hits + ' ✓</b> · <b class="m">' +
+          knockoutRec.misses + ' ✗</b> · ' + knockoutRec.open + ' open'
+        : '') +
+      '</div></div>';
+  }).join('');
+}
+
+async function load(){
+  const seq = ++loadSeq;
+  try {
+    const bust = '?t=' + new Date().getTime();
+    const dataRes = await fetch('data.json' + bust);
+    if (!dataRes.ok) throw new Error('data.json HTTP ' + dataRes.status);
+    const data = await dataRes.json();
+    const idxRes = await fetch('predictions/players.json' + bust);
+    if (!idxRes.ok) throw new Error('players.json HTTP ' + idxRes.status);
+    const idx = await idxRes.json();
+    const settled = await Promise.allSettled(idx.map(async (f) => {
+      const r = await fetch('predictions/' + f + bust);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }));
+    if (seq !== loadSeq) return;
+    const committed = [];
+    const problems = [];
+    settled.forEach((s, i) => {
+      if (s.status === 'fulfilled') committed.push(s.value);
+      else problems.push(idx[i] + ': ' + s.reason.message);
+    });
+    // Committed files + this device's local submissions (tagged on render).
+    const players = U.mergedPlayers(committed);
+    state = W.computeAll(data, players);
+    for (const p of players) {
+      for (const prob of W.validateMatchPicks(p.matchPicks, data.matches)) {
+        problems.push((p.name || '?') + ': ' + prob);
+      }
+    }
+    const errEl = $('err');
+    if (problems.length) {
+      errEl.style.display = 'block';
+      errEl.innerHTML = '<b>Data issues:</b><br>' + problems.map(U.esc).join('<br>');
+    } else {
+      errEl.style.display = 'none';
+    }
+    render(data.matches);
+  } catch (e) {
+    if (seq !== loadSeq) return;
+    const errEl = $('err');
+    errEl.style.display = 'block';
+    errEl.textContent = 'Could not load pool data: ' + e.message;
+  }
+}
+load();
+setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>

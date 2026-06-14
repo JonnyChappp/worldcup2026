@@ -5,16 +5,38 @@ Live World Cup 2026 tracker plus a bracket-prediction pool for friends.
 Based on [kingdoggydog/worldcup2026](https://github.com/Kingdoggydog/worldcup2026)
 (schedule, groups, and knockout pages). Added here:
 
-- **`predictions.html`** ("Brackets" in the nav) — the pool page:
-  leaderboard with locked / projected / max-possible points, a per-game
-  "who called it" grid for every knockout match, live group tables vs each
-  player's predicted order, and a viewer for each player's full predicted
-  bracket with hits and busts marked.
+- **`predictions.html`** ("Group + Brackets" in the nav) — the original
+  pool page, scoring the full-tournament brackets everyone drew before
+  kickoff: leaderboard with locked / projected / max-possible points, a
+  per-game "who called it" grid for every knockout match, live group tables
+  vs each player's predicted order, and a viewer for each player's full
+  predicted bracket with hits and busts marked.
+- **`nextgame.html`** ("Next Game") — what's live and what kicks off next,
+  with every player's call on it, the on-deck queue, and per-game pick
+  records. Group-stage calls come from `matchPicks` (below); knockout games
+  fall back to the original brackets until per-game picks exist.
+- **`brackets.html`** ("Brackets") — the second pool: once the group stage
+  decides the real Round-of-32 matchups, everyone calls every knockout game
+  fresh. Same who-called-it grid and per-player viewer, driven by
+  `matchPicks` instead of the pre-tournament brackets.
+- **`picks.html`** ("Picks") — the entry wizard where anyone adds themselves
+  (name + colour) and makes picks in any of three modes: **every game**
+  (home/draw/away on all 72 group games), **full bracket** (tap-to-rank each
+  group, choose 8 third-place qualifiers, then tap winners through an
+  interactive bracket to the trophy), or **knockout only** (unlocks once the
+  real Round-of-32 is set). Save writes the whole player object to this
+  device's localStorage (so it shows immediately, tagged "unpublished") and
+  downloads a ready-to-commit `<name>.json`. The full-bracket builder slots
+  third-place teams with a pool-respecting matching (`matchThirds`), not
+  FIFA's allocation table — harmless because knockout scoring is team-identity.
 - **`brackets.js`** — the scoring engine (pure logic, no DOM). Encodes the
   official bracket structure (which group positions feed each Round-of-32
   slot, and the feeder chain through the final), computes live group
   standings with FIFA tiebreakers, aligns each player's predictions to real
-  match slots, and scores them.
+  match slots, and scores them. Also the per-game pick helpers
+  (`upcomingMatches`, `judgePick`, `pickRecord`, `validateMatchPicks`).
+- **`pool-ui.js`** — shared HTML builders + the draft-pick store for the
+  per-game pages.
 - **`predictions/`** — one JSON file per player (see the README in there for
   how to add a friend), plus `players.json` listing the files to load.
 - **`tests/run-tests.js`** — engine tests: `node tests/run-tests.js`.

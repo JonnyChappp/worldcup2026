@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brackets — FIFA World Cup 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A; --card:#141829; --box:#1C2235; --line:#262d45;
+  --text:#E8EAF2; --sub:#7A82A8; --gold:#C9A84C;
+  --hit:#2ECC71; --miss:#E74C3C; --live:#4DA3FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;padding:14px 16px 60px}
+h1,h2,h3{font-family:'Barlow Condensed',sans-serif}
+.hdr{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px;margin-bottom:18px}
+.hdr h1{color:var(--gold);text-transform:uppercase;font-weight:800;font-size:clamp(20px,4vw,30px);letter-spacing:.5px}
+.hdr .sub{color:var(--sub);font-size:14px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.nav a{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text);text-decoration:none;border:1.5px solid var(--line);border-radius:8px;
+  padding:6px 14px;font-size:14px;font-weight:600}
+.nav a.on{background:var(--gold);border-color:var(--gold);color:#0A0E1A}
+section{margin-bottom:34px}
+section>h2{color:var(--gold);text-transform:uppercase;font-size:20px;letter-spacing:.8px;margin-bottom:4px}
+section>.note{color:var(--sub);font-size:13px;margin-bottom:12px}
+section>.note a{color:var(--gold)}
+.err{background:#3a1320;border:1px solid var(--miss);border-radius:10px;padding:10px 14px;
+  color:#ffb4b4;font-size:14px;margin-bottom:18px;display:none}
+.banner{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:12px 16px;
+  color:var(--sub);font-size:14px;margin-bottom:22px;line-height:1.6}
+.banner b{color:var(--gold)}
+.banner a{color:var(--gold)}
+
+/* pick chips */
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--box);border:1px solid var(--line);
+  border-radius:7px;padding:2px 8px 2px 5px;font-size:13px;font-weight:600;white-space:nowrap}
+.chip img{width:17px;height:17px;object-fit:contain}
+.chip.hit{border-color:var(--hit);background:rgba(46,204,113,.13)}
+.chip.miss{border-color:var(--miss);background:rgba(231,76,60,.10);color:#d99}
+.chip.miss .tla{text-decoration:line-through}
+.chip.none{opacity:.55;border-style:dashed}
+.chip.draft{border-style:dashed;border-color:var(--gold)}
+.chip .owner{font-size:11px;color:var(--sub);font-weight:500}
+
+/* next-game match cards (shared look with nextgame.html) */
+.mcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-bottom:12px}
+.mcard.islive{border-color:var(--live)}
+.mcard .meta{color:var(--sub);font-size:13px;margin-bottom:8px}
+.mcard .meta b{color:var(--gold)}
+.mcard .lv{color:var(--live);font-weight:700}
+.mcard .fixture{display:flex;align-items:center;gap:12px;font-weight:600;flex-wrap:wrap}
+.mcard .team{display:flex;align-items:center;gap:8px;min-width:0}
+.mcard .team img{width:21px;height:21px;object-fit:contain;flex-shrink:0}
+.mcard .vs{color:var(--sub);font-size:13px}
+.mcard .vs.sc{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;color:var(--text)}
+.mcard .vs.sc.live{color:var(--live)}
+.mcard .wpicks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.mcard.hero{border-color:var(--gold);padding:18px 20px}
+.mcard.hero.islive{border-color:var(--live)}
+.mcard.hero .fixture{font-size:clamp(18px,3.4vw,27px);font-family:'Barlow Condensed',sans-serif;
+  text-transform:uppercase;letter-spacing:.5px}
+.mcard.hero .team img{width:34px;height:34px}
+.mcard.hero .vs.sc{font-size:clamp(20px,3.4vw,30px)}
+
+/* mirrored bracket grids (ported from the Group + Brackets page) */
+.bwrap{overflow-x:auto;padding-bottom:8px}
+.bgrid{display:grid;column-gap:14px}
+.bgrid.games{min-width:1800px}
+.bgrid.viewer{min-width:1520px}
+.blab{font-family:'Barlow Condensed',sans-serif;color:var(--sub);text-transform:uppercase;
+  font-size:13px;letter-spacing:1px;text-align:center;padding-bottom:8px;align-self:end}
+.bgrid .bm{align-self:center;margin:3px 0;min-width:0}
+.bm{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:5px 8px}
+.bm .lbl{color:var(--sub);font-size:10.5px;margin-bottom:2px}
+.bm .lbl .lv{color:var(--live);font-weight:700}
+.bm .t{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:2px 0}
+.bm .t img{width:16px;height:16px;object-fit:contain}
+.bm .t .ph{color:var(--sub);font-weight:500}
+.bm .t.pickw{color:var(--gold)}
+.bm .t .mark{margin-left:auto;font-size:11px}
+.bm .t.ok .mark{color:var(--hit)}
+.bm .t.dead{color:#8a5560}
+.bm .t.dead .nm{text-decoration:line-through}
+.bm .t.dead .mark{color:var(--miss)}
+.bm .t .sc{margin-left:auto;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px}
+.bm .t .sc.live{color:var(--live)}
+.wpicks{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
+.wpicks .chip{font-size:11px;padding:1px 6px 1px 4px;gap:4px}
+.wpicks .chip img{width:14px;height:14px}
+.wpicks .nopicks{color:var(--sub);font-size:11px}
+
+/* player tabs */
+.ptabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ptab{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-weight:600;font-size:15px;
+  letter-spacing:.5px;border:1.5px solid var(--line);background:none;color:var(--text);
+  border-radius:8px;padding:6px 16px;cursor:pointer}
+.ptab.on{background:var(--gold);border-color:var(--gold);color:#0A0E1A}
+footer{margin-top:30px;color:var(--sub);font-size:12px}
+footer a{color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Brackets</h1>
+  <div class="sub">FIFA World Cup 2026 — the knockout pool, called game by game</div>
+  <nav class="nav">
+    <a href="index.html">&#128197; Schedule</a>
+    <a href="groups.html">&#128202; Groups</a>
+    <a href="bracket.html">&#127942; Knockout</a>
+    <a href="nextgame.html">&#9197;&#65039; Next Game</a>
+    <a href="predictions.html">&#127919; Group + Brackets</a>
+    <a href="brackets.html" class="on">&#128302; Brackets</a>
+    <a href="picks.html">&#9999;&#65039; Picks</a>
+  </nav>
+</div>
+
+<div class="err" id="err"></div>
+
+<div class="banner" id="banner">
+  <b>New pool, fresh picks.</b> Once the group stage decides who actually plays who,
+  everyone calls every knockout game here — no carrying over the
+  <a href="predictions.html">original brackets</a> (those keep scoring on their own page).
+  Group-stage calls already live on <a href="nextgame.html">Next Game</a> via
+  <a href="picks.html">match picks</a>.
+</div>
+
+<section>
+  <h2>Next game</h2>
+  <div class="note">The next game to be played and how each person called it.</div>
+  <div id="next"></div>
+</section>
+
+<section>
+  <h2>Who called it</h2>
+  <div class="note">The knockout bracket with everyone's per-game pick. Real teams and scores
+    fill in as the tournament reaches them; picks fill in once the matchups are set.</div>
+  <div id="games"></div>
+</section>
+
+<section>
+  <h2>Predicted paths</h2>
+  <div class="note">Each player's picked winner, game by game, through the bracket they
+    actually got — gold is their call, green nailed it, red busted.</div>
+  <div class="ptabs" id="ptabs"></div>
+  <div class="bwrap" id="viewer"></div>
+</section>
+
+<footer>
+  Pool tracker for the lads · <a href="predictions.html">Group + Brackets pool</a> ·
+  data from football-data.org
+</footer>
+
+<script src="brackets.js"></script>
+<script src="pool-ui.js"></script>
+<script>
+(function(){
+'use strict';
+const W = window.WCBrackets;
+const U = window.PoolUI;
+const $ = (id) => document.getElementById(id);
+
+let state = null;       // computeAll output
+let selected = null;    // viewer tab
+let loadSeq = 0;
+try { selected = localStorage.getItem('wc2026_pool_player') || null; } catch(e){}
+
+const unpub = (player) => player._local || player._unpublished;
+
+// Next-game hero: per-game picks first, original bracket as fallback for
+// knockout slots (tagged), same as the Next Game page.
+function picksFor(m){
+  return state.rows.map((row) => {
+    const mp = row.player.matchPicks || {};
+    let pick = mp[m.id] || null;
+    let tag = pick && unpub(row.player) ? 'unpublished' : null;
+    if (!pick && W.ROUND_OF[m.id]) {
+      const d = row.score.detail.picks[m.id];
+      if (d && d.pick) { pick = d.pick; tag = 'bracket'; }
+    }
+    return { name: row.player.name, pick, status: W.judgePick(m, pick), tag };
+  });
+}
+
+function renderNext(){
+  const up = W.upcomingMatches(state.allMatches);
+  const heroes = up.live.length ? up.live
+    : up.next ? up.queue.filter((m) => m.utcDate === up.next.utcDate) : [];
+  $('next').innerHTML = heroes.length
+    ? heroes.map((m) => U.matchCard(state.meta, m, picksFor(m), { hero: true })).join('')
+    : '<div class="mcard"><div class="meta">That’s it — the tournament is over.</div></div>';
+}
+
+// Real fixture rows for one knockout slot (or its placeholder).
+function fixtureRows(id){
+  const real = state.actual.slots[id] || {};
+  const m = state.matchById[id];
+  const ft = m && m.score && m.score.fullTime;
+  const showScore = (real.finished || real.live) && ft && ft.home != null;
+  const teamRow = (tla) => {
+    const won = real.winner === tla;
+    return '<div class="t' + (won ? ' ok' : '') + '">' + U.crest(state.meta, tla) +
+      '<span class="nm">' + U.esc(U.tname(state.meta, tla)) + '</span>' +
+      (showScore
+        ? '<span class="sc' + (real.live ? ' live' : '') + '">' +
+          (tla === real.home ? ft.home : ft.away) + '</span>'
+        : (won ? '<span class="mark">✓</span>' : '')) +
+      '</div>';
+  };
+  return (real.home && real.away)
+    ? teamRow(real.home) + teamRow(real.away)
+    : '<div class="t"><span class="ph">' + U.esc(U.slotPlaceholder(id)) + '</span></div>';
+}
+
+function slotLabel(id){
+  const real = state.actual.slots[id] || {};
+  return '<div class="lbl">M' + W.MATCH_NUM[id] + ' · ' +
+    U.fmtDate(real.utcDate || '') +
+    (real.live ? ' · <span class="lv">LIVE</span>' : '') + '</div>';
+}
+
+// ---------------------------------------------------------- who called it
+function renderGames(){
+  const box = (id) => {
+    const m = state.matchById[id];
+    const picks = state.rows.map((row) => {
+      const pick = (row.player.matchPicks || {})[id] || null;
+      if (!pick) return '';
+      const status = m ? W.judgePick(m, pick) : 'open';
+      const tag = unpub(row.player) ? 'unpublished' : null;
+      return U.pickChip(state.meta, row.player.name, pick, status, tag);
+    }).join('');
+    return slotLabel(id) + fixtureRows(id) +
+      '<div class="wpicks">' +
+      (picks || '<span class="nopicks">no picks yet</span>') + '</div>';
+  };
+  $('games').innerHTML = '<div class="bwrap" id="games-scroll">' +
+    '<div class="bgrid games" style="grid-template-columns:repeat(9,minmax(195px,1fr))">' +
+    U.mirroredCells(box) + '</div></div>';
+}
+
+// -------------------------------------------------------- predicted paths
+function renderTabs(){
+  $('ptabs').innerHTML = state.rows.map((row) =>
+    '<button class="ptab' + (row.player.name === selected ? ' on' : '') + '" data-p="' +
+    U.esc(row.player.name) + '">' + U.esc(row.player.name) + '</button>').join('');
+  Array.prototype.forEach.call(document.querySelectorAll('.ptab'), (b) => {
+    b.onclick = function(){
+      selected = this.getAttribute('data-p');
+      try { localStorage.setItem('wc2026_pool_player', selected); } catch(e){}
+      renderTabs(); renderViewer();
+    };
+  });
+}
+
+function renderViewer(){
+  const row = state.rows.find((r) => r.player.name === selected) || state.rows[0];
+  if (!row) { $('viewer').innerHTML = ''; return; }
+  const mp = row.player.matchPicks || {};
+  const box = (id) => {
+    const real = state.actual.slots[id] || {};
+    const m = state.matchById[id];
+    const pick = mp[id] || null;
+    const verdict = (pick && m) ? W.judgePick(m, pick) : 'open';
+    const team = (tla) => {
+      if (!tla) return '<div class="t"><span class="ph">' +
+        U.esc(U.slotPlaceholder(id)) + '</span></div>';
+      const isPick = pick === tla;
+      const cls = isPick && verdict === 'hit' ? ' pickw ok' :
+        isPick && verdict === 'miss' ? ' pickw dead' : isPick ? ' pickw' : '';
+      const mark = isPick ? (verdict === 'hit' ? '✓' : verdict === 'miss' ? '✗' : '●') : '';
+      return '<div class="t' + cls + '">' + U.crest(state.meta, tla) +
+        '<span class="nm">' + U.esc(U.tname(state.meta, tla)) + '</span>' +
+        '<span class="mark">' + mark + '</span></div>';
+    };
+    let html = slotLabel(id);
+    if (real.home && real.away) {
+      html += team(real.home) + team(real.away);
+      // A pick that's no longer in the fixture (stale hand-edit) still shows.
+      if (pick && pick !== real.home && pick !== real.away) {
+        html += '<div class="wpicks">' +
+          U.pickChip(state.meta, row.player.name, pick, 'miss', null) + '</div>';
+      }
+    } else {
+      html += team(null);
+      if (pick) {
+        html += '<div class="wpicks">' +
+          U.pickChip(state.meta, row.player.name, pick, 'open',
+            unpub(row.player) ? 'unpublished' : null) + '</div>';
+      }
+    }
+    return html;
+  };
+  $('viewer').innerHTML =
+    '<div class="bgrid viewer" style="grid-template-columns:repeat(9,minmax(165px,1fr))">' +
+    U.mirroredCells(box) + '</div>';
+}
+
+// ------------------------------------------------------------------- load
+async function load(){
+  const seq = ++loadSeq;
+  try {
+    const bust = '?t=' + new Date().getTime();
+    const dataRes = await fetch('data.json' + bust);
+    if (!dataRes.ok) throw new Error('data.json HTTP ' + dataRes.status);
+    const data = await dataRes.json();
+    const idxRes = await fetch('predictions/players.json' + bust);
+    if (!idxRes.ok) throw new Error('players.json HTTP ' + idxRes.status);
+    const idx = await idxRes.json();
+    const settled = await Promise.allSettled(idx.map(async (f) => {
+      const r = await fetch('predictions/' + f + bust);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }));
+    if (seq !== loadSeq) return;
+    const committed = [];
+    const problems = [];
+    settled.forEach((s, i) => {
+      if (s.status === 'fulfilled') committed.push(s.value);
+      else problems.push(idx[i] + ': ' + s.reason.message);
+    });
+    // Committed files + this device's local submissions (tagged on render).
+    const players = U.mergedPlayers(committed);
+    state = W.computeAll(data, players);
+    state.allMatches = data.matches;
+    state.matchById = {};
+    for (const m of data.matches) state.matchById[m.id] = m;
+    for (const p of players) {
+      for (const prob of W.validateMatchPicks(p.matchPicks, data.matches)) {
+        problems.push((p.name || '?') + ': ' + prob);
+      }
+    }
+    const errEl = $('err');
+    if (problems.length) {
+      errEl.style.display = 'block';
+      errEl.innerHTML = '<b>Data issues:</b><br>' + problems.map(U.esc).join('<br>');
+    } else {
+      errEl.style.display = 'none';
+    }
+    if (!selected || !state.rows.some((r) => r.player.name === selected)) {
+      selected = state.rows[0] && state.rows[0].player.name;
+    }
+    const gamesEl = $('games-scroll');
+    const gamesX = gamesEl ? gamesEl.scrollLeft : 0;
+    const viewX = $('viewer').scrollLeft;
+    renderNext(); renderGames(); renderTabs(); renderViewer();
+    const gamesEl2 = $('games-scroll');
+    if (gamesEl2) gamesEl2.scrollLeft = gamesX;
+    $('viewer').scrollLeft = viewX;
+  } catch (e) {
+    if (seq !== loadSeq) return;
+    const errEl = $('err');
+    errEl.style.display = 'block';
+    errEl.textContent = 'Could not load pool data: ' + e.message;
+  }
+}
+load();
+setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>

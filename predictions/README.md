@@ -1,12 +1,18 @@
 # Bracket predictions
 
-One JSON file per player. Add a friend by copying `_template.json` to
-`<name>.json`, filling in their picks, and adding the filename to
-`players.json` in this folder.
+One JSON file per player, listed in `players.json` in this folder.
 
-Where to get the picks: on play.fifa.com Bracket Challenge, print/save the
-bracket pages to PDF (groups page + knockout page) or take full screenshots —
-the picks can be transcribed straight from those.
+**Easiest way to add a friend:** open **`picks.html`** ("Picks" in the nav)
+in the site, add a person by name, make their picks (any of: every group game,
+a full groups-and-knockout bracket, or knockout-only), and hit **Save** — it
+downloads a ready-to-commit `<name>.json`. Drop that file in this folder and
+add its filename to `players.json`. Until it's committed, the picks show only
+on the device they were made on (tagged "unpublished").
+
+You can still hand-author a file by copying `_template.json` to `<name>.json`.
+Picks transcribed from play.fifa.com's Bracket Challenge (print the groups +
+knockout pages to PDF, or screenshot them) drop straight into the bracket
+fields.
 
 ## Team codes
 
@@ -33,3 +39,9 @@ PAR POR QAT RSA SCO SEN SUI SWE TUN TUR URY USA UZB
   are display labels from the bracket printout
 - `champion` — predicted winner
 - `color` — accent color for this player in charts/leaderboard
+- `matchPicks` — per-game calls, keyed by football-data match id: the
+  picked winner's TLA, or `"DRAW"` (group stage only). Don't fill this by
+  hand — `picks.html` ("Picks" in the nav) has the full fixture list with
+  buttons and a Save that downloads this file updated; just drop the
+  download back in this folder. Knockout games go in here too once the
+  bracket is set (the "Brackets" page reads them).
